@@ -51,7 +51,7 @@ dt_update = 10  # sec
 # create output files
 # f_text_1 = open('r00.txt', 'a')
 # f_text_2 = open('r01.txt', 'a')
-f_h5 = tables.open_file('fridge_data.h5', mode='w', title='fridge data')
+f_h5 = tables.open_file('data/fridge_data.h5', mode='w', title='fridge data')
 group_all_data = f_h5.create_group('/', 'data', 'all data')
 table_lakeshore_218_1 = f_h5.create_table(group_all_data, 'LS_218_1', labels_lakeshore_218_1, "Data from Lakeshore 218 #1")
 table_lakeshore_218_2 = f_h5.create_table(group_all_data, 'LS_218_2', labels_lakeshore_218_2, "Data from Lakeshore 218 #2")
