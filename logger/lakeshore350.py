@@ -10,23 +10,19 @@
 import tables
 import time
 
-class record(tables.IsDescription):
-    record_time = tables.Time32Col()
-    chan0 = tables.Float32Col()
-    chan1 = tables.Float32Col()
-    chan2 = tables.Float32Col()
-    chan3 = tables.Float32Col()
-
-def write(record, data_str):
+def write(row, col_dict, data_str):
     data_list_str = data_str.rstrip('\r\n').split(',')
     data_list = [float(data_str) for data_str in data_list_str]   # convert to floats
 
+    # extract the column labels
+    labels = col_dict.keys()
+
     # write time info
-    record['record_time'] = time.time()
+    row['record time'] = time.time()
 
     # write channel info
     for jChan in range(len(data_list)):
-        record['chan' + str(jChan)] = data_list[jChan]
+        row[labels[jChan]] = data_list[jChan]
 
     # append to the table
-    record.append()
+    row.append()

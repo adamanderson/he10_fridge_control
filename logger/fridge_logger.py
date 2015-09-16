@@ -17,6 +17,34 @@ import tables
 import lakeshore218
 import lakeshore350
 
+# channel labels
+labels_lakeshore_218_1 = {'record time': tables.Time32Col(),
+                          'HEX': tables.Float32Col(),
+                          'mainplate': tables.Float32Col(),
+                          'He4 IC Pump': tables.Float32Col(),
+                          'He4 IC Pump': tables.Float32Col(),
+                          'He4 UC Pump': tables.Float32Col(),
+                          'He4 IC Switch': tables.Float32Col(),
+                          'He3 IC Switch': tables.Float32Col(),
+                          'He3 Uc Switch': tables.Float32Col(),
+                          }
+labels_lakeshore_218_2 = {'record time': tables.Time32Col(),
+                          'channel 0': tables.Float32Col(),
+                          'channel 1': tables.Float32Col(),
+                          'channel 2': tables.Float32Col(),
+                          'channel 3': tables.Float32Col(),
+                          'channel 4': tables.Float32Col(),
+                          'channel 5': tables.Float32Col(),
+                          'channel 6': tables.Float32Col(),
+                          'channel 7': tables.Float32Col(),
+                          }
+labels_lakeshore_350 = {'record time': tables.Time32Col(),
+                        'UC Head': tables.Float32Col(),
+                        'IC Head': tables.Float32Col(),
+                        'UC Stage': tables.Float32Col(),
+                        'IC Stage': tables.Float32Col(),
+                        }
+
 # update frequency
 dt_update = 10  # sec
 
@@ -25,9 +53,9 @@ dt_update = 10  # sec
 # f_text_2 = open('r01.txt', 'a')
 f_h5 = tables.open_file('fridge_data.h5', mode='w', title='fridge data')
 group_all_data = f_h5.create_group('/', 'data', 'all data')
-table_lakeshore_218_1 = f_h5.create_table(group_all_data, 'LS_218_1', lakeshore218.record, "Data from Lakeshore 218 #1")
-table_lakeshore_218_2 = f_h5.create_table(group_all_data, 'LS_218_2', lakeshore218.record, "Data from Lakeshore 218 #2")
-table_lakeshore_350 = f_h5.create_table(group_all_data, 'LS_350', lakeshore350.record, "Data from Lakeshore 350")
+table_lakeshore_218_1 = f_h5.create_table(group_all_data, 'LS_218_1', labels_lakeshore_218_1, "Data from Lakeshore 218 #1")
+table_lakeshore_218_2 = f_h5.create_table(group_all_data, 'LS_218_2', labels_lakeshore_218_2, "Data from Lakeshore 218 #2")
+table_lakeshore_350 = f_h5.create_table(group_all_data, 'LS_350', labels_lakeshore_350, "Data from Lakeshore 350")
 
 # set up serial ports
 lakeshore_218_1 = serial.Serial('/dev/ttyr00', 9600, serial.SEVENBITS, serial.PARITY_ODD, serial.STOPBITS_ONE )
@@ -70,11 +98,11 @@ try:
         # f_text_2.write(time_string + out_lakeshore_218_2)
 
         # write the data to a pytables file for more modern storage
-        lakeshore218.write(table_lakeshore_218_1.row, out_lakeshore_218_1)
+        lakeshore218.write(table_lakeshore_218_1.row, labels_lakeshore_218_1, out_lakeshore_218_1)
         table_lakeshore_218_1.flush()
-        lakeshore218.write(table_lakeshore_218_2.row, out_lakeshore_218_2)
+        lakeshore218.write(table_lakeshore_218_2.row, labels_lakeshore_218_2, out_lakeshore_218_2)
         table_lakeshore_218_2.flush()
-        lakeshore350.write(table_lakeshore_350.row, out_lakeshore_350)
+        lakeshore350.write(table_lakeshore_350.row, labels_lakeshore_350, out_lakeshore_350)
         table_lakeshore_350.flush()
 
         # wait before reading again
