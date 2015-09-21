@@ -16,42 +16,51 @@ import numpy as np
 import tables
 import lakeshore218
 import lakeshore350
+import shutil
+
+import plotter
 
 # channel labels
-labels_lakeshore_218_1 = {'record time': tables.Time32Col(),
-                          'HEX': tables.Float32Col(),
-                          'mainplate': tables.Float32Col(),
-                          'He4 IC Pump': tables.Float32Col(),
-                          'He4 IC Pump': tables.Float32Col(),
-                          'He4 UC Pump': tables.Float32Col(),
-                          'He4 IC Switch': tables.Float32Col(),
-                          'He3 IC Switch': tables.Float32Col(),
-                          'He3 Uc Switch': tables.Float32Col(),
+labels_lakeshore_218_1 = {'record time': tables.Time32Col(pos=0),
+                          'HEX': tables.Float32Col(pos=1),
+                          'mainplate': tables.Float32Col(pos=2),
+                          'He4 IC Pump': tables.Float32Col(pos=3),
+                          'He3 IC Pump': tables.Float32Col(pos=4),
+                          'He3 UC Pump': tables.Float32Col(pos=5),
+                          'He4 IC Switch': tables.Float32Col(pos=6),
+                          'He3 IC Switch': tables.Float32Col(pos=7),
+                          'He3 UC Switch': tables.Float32Col(pos=8),
                           }
-labels_lakeshore_218_2 = {'record time': tables.Time32Col(),
-                          'channel 0': tables.Float32Col(),
-                          'channel 1': tables.Float32Col(),
-                          'channel 2': tables.Float32Col(),
-                          'channel 3': tables.Float32Col(),
-                          'channel 4': tables.Float32Col(),
-                          'channel 5': tables.Float32Col(),
-                          'channel 6': tables.Float32Col(),
-                          'channel 7': tables.Float32Col(),
+keys_lakeshore_218_1 = ['record time', 'HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump',
+                        'He3 UC Pump', 'He4 IC Switch', 'He3 IC Switch',  'He3 UC Switch']
+labels_lakeshore_218_2 = {'record time': tables.Time32Col(pos=0),
+                          'PTC 4K stage': tables.Float32Col(pos=1),
+                          'PTC 50K stage': tables.Float32Col(pos=2),
+                          'channel 2': tables.Float32Col(pos=3),
+                          'channel 3': tables.Float32Col(pos=4),
+                          'wiring harness': tables.Float32Col(pos=5),
+                          '4K shield near harness': tables.Float32Col(pos=6),
+                          '4K plate near harness': tables.Float32Col(pos=7),
+                          'SQUID board': tables.Float32Col(pos=8),
                           }
-labels_lakeshore_350 = {'record time': tables.Time32Col(),
-                        'UC Head': tables.Float32Col(),
-                        'IC Head': tables.Float32Col(),
-                        'UC Stage': tables.Float32Col(),
-                        'IC Stage': tables.Float32Col(),
+keys_lakeshore_218_2 = ['record time', 'PTC 4K stage', 'PTC 50K stage', 'channel 2', 'channel 3',
+                        'wiring harness', '4K shield near harness', '4K plate near harness',  'SQUID board']
+labels_lakeshore_350 = {'record time': tables.Time32Col(pos=0),
+                        'UC Head': tables.Float32Col(pos=1),
+                        'IC Head': tables.Float32Col(pos=2),
+                        'LC shield': tables.Float32Col(pos=3),
+                        'LC board': tables.Float32Col(pos=4),
                         }
+keys_lakeshore_350 = ['record time', 'UC Head', 'IC Head', 'LC shield', 'LC board']
 
 # update frequency
 dt_update = 10  # sec
 
+# file name
+data_filename = 'data/fridge_data.h5'
+
 # create output files
-# f_text_1 = open('r00.txt', 'a')
-# f_text_2 = open('r01.txt', 'a')
-f_h5 = tables.open_file('data/fridge_data.h5', mode='w', title='fridge data')
+f_h5 = tables.open_file(data_filename, mode='w', title='fridge data')
 group_all_data = f_h5.create_group('/', 'data', 'all data')
 table_lakeshore_218_1 = f_h5.create_table(group_all_data, 'LS_218_1', labels_lakeshore_218_1, "Data from Lakeshore 218 #1")
 table_lakeshore_218_2 = f_h5.create_table(group_all_data, 'LS_218_2', labels_lakeshore_218_2, "Data from Lakeshore 218 #2")
@@ -86,24 +95,20 @@ try:
         out_lakeshore_218_2 = lakeshore_218_2.read(lakeshore_218_2.inWaiting())
         out_lakeshore_350, addr = socket_lakeshore_350.recvfrom(2048)
 
-        # # write the data to text files (for backwards compatibility)
-        # time_struct = time.localtime()
-        # time_string = str(time_struct.tm_year) + ' ' + \
-        #               str(time_struct.tm_mon) + ' ' + \
-        #               str(time_struct.tm_mday) + ' ' + \
-        #               str(time_struct.tm_hour) + ' ' + \
-        #               str(time_struct.tm_min) + ' ' + \
-        #               str(time_struct.tm_sec) + ' '
-        # f_text_1.write(time_string + out_lakeshore_218_1)
-        # f_text_2.write(time_string + out_lakeshore_218_2)
-
-        # write the data to a pytables file for more modern storage
-        lakeshore218.write(table_lakeshore_218_1.row, labels_lakeshore_218_1, out_lakeshore_218_1)
+        # write the data to a pytables file
+        lakeshore218.write(table_lakeshore_218_1.row, keys_lakeshore_218_1, out_lakeshore_218_1)
         table_lakeshore_218_1.flush()
-        lakeshore218.write(table_lakeshore_218_2.row, labels_lakeshore_218_2, out_lakeshore_218_2)
+        lakeshore218.write(table_lakeshore_218_2.row, keys_lakeshore_218_2, out_lakeshore_218_2)
         table_lakeshore_218_2.flush()
-        lakeshore350.write(table_lakeshore_350.row, labels_lakeshore_350, out_lakeshore_350)
+        lakeshore350.write(table_lakeshore_350.row, keys_lakeshore_350, out_lakeshore_350)
         table_lakeshore_350.flush()
+
+        # duplicate the pytables file so that it can be read by other processes
+        # as needed
+        shutil.copyfile(data_filename, data_filename + str('.lock'))
+        shutil.move(data_filename + str('.lock'), data_filename.strip('.h5') + '_read.h5')
+
+        plotter.update_plot(table_lakeshore_218_1, table_lakeshore_218_2, table_lakeshore_350)
 
         # wait before reading again
         time.sleep(dt_update)
