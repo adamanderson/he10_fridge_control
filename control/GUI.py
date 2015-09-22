@@ -230,7 +230,7 @@ class MainWindow(wx.Frame):
         if self.canstartcycle:
             self.logBox.AppendText('Starting Automatic Fridge Cycle \n')
             self.canstartcycle=0
-            t = threading.Thread(name='autocycle', target=self.autocycle)
+            t = threading.Thread(name='autocycle', target=self.autocycle, args=self.dataFileBox.GetValue())
             t.start()
         else:
             self.logBox.AppendText('Automatic Fridge Cycle is already running \n')

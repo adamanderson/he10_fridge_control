@@ -1,61 +1,25 @@
-import time as sleeptime
-import serial
+# getslope.py
+#
+# A script for reading temperature slopes from the log files produced by the
+# fridgelogger. This is a rewrite of Alex Diaz's original code, which has been
+# modified to read from the new hdf5 storage for the log files.
+#
+# Adam Anderson
+# adama@fnal.gov
+# 21 September 2015
+
+import tables
 import datetime
-import re
-from datetime import datetime, date, time
 
+def getslope(datafile_path, dt):
+    # open pytables file
+    datafile = tables.open_file(datafile_path, 'r')
+    datatable = datafile.root.data.LS_218_1
+    maxtime = [row['record time'] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)]
+    HEX_temps = [row['HEX'] for row in datatable.iterrows() if row['record time'] > maxtime-dt]
+    mainplate_temps = [row['mainplate'] for row in datatable.iterrows() if row['record time'] > maxtime-dt]
 
+    HEX_slope = (HEX_temps[-1] - HEX_temps[0]) / dt
+    mainplate_slope = (mainplate_temps[-1] - mainplate_temps[0]) / dt
 
-def getslope(number):
-    fo = open("../r00-480.data","r")
-    lines = fo.readlines()
-    data = []
-    HEXslopes=[]
-    mainslopes=[]
-
-    for line in lines:
-
-       iword = 0
-
-       for word in re.split('[ ,]',line):
-
-          iword = iword + 1
-
-          if iword == 1:   # year
-             year = int(word)
-
-          if iword == 2:   # month
-             month = int(word)
-
-          if iword == 3:   # day
-             day = int(word)
-
-          if iword == 4:   # hour
-            hour =  int(word)
-
-          if iword == 5:   # minutes
-            minute =  int(word)
-
-          if iword == 6:  # seconds
-            sec  = int(word)
-
-            d = date(year,month,day)
-            t = time(hour,minute,sec)
-            x = datetime.combine(d,t)
-            data.append([])
-            data[0].append(x)
-          if iword == 7:    # HEX
-            data.append([])
-            data[1].append(float(word))
-          if iword == 8:    # Mainplate
-            data.append([])
-            data[2].append(float(word))
-    for i in range(len(data[0])-number,len(data[0])):
-        HEXdiff= data[1][i]-data[1][i-1]
-        maindiff= data[2][i]-data[2][i-1]
-        timediff=(data[0][i]-data[0][i-1]).seconds
-        HEXslopes.append(HEXdiff/timediff)
-        mainslopes.append(maindiff/timediff)
-
-    return HEXslopes, mainslopes
-
+    return HEX_slope, mainplate_slope

@@ -1,51 +1,29 @@
-import time as sleeptime
-import serial
+# gettemp.py
+#
+# A script for reading temperatures from the log files produced by the fridge
+# logger. This is a rewrite of Alex Diaz's original code, which has been
+# modified to read from the new hdf5 storage for the log files.
+#
+# Adam Anderson
+# adama@fnal.gov
+# 21 September 2015
+
+import tables
 import datetime
-import re
-from datetime import datetime, date, time
 
-def gettemp():
-    fo = open("../r00-480.data","r")
-    lines = fo.readlines()[-1]
-    TEMP = []
+def gettemp(datafile_path):
+    last_entry = []
 
+    # open pytables file
+    datafile = tables.open_file(datafile_path, 'r')
+    datatable = datafile.root.data.LS_218_1
+    for colname in datatable.colnames:
+        if colname == "record time":
+            # time data is stored as a UNIX timestamp, and we need to convert
+            # this into a Python datetime object
+            time = datetime.fromtimestamp([row[colname] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)])
+            last_entry.append(time)
+        else:
+            last_entry.append([row[colname] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)])
 
-    iword = 0
-
-    for word in re.split('[ ,]',lines):
-
-        iword = iword + 1
-        if iword == 1:   # year
-            year = int(word)
-        if iword == 2:   # month
-            month = int(word)
-        if iword == 3:   # day
-            day = int(word)
-        if iword == 4:   # hour
-            hour =  int(word)
-        if iword == 5:   # minutes
-            minute =  int(word)
-        if iword == 6:  # seconds
-            sec  = int(word)
-            d = date(year,month,day)
-            t = time(hour,minute,sec)
-            x = datetime.combine(d,t)
-            TEMP.append(x)
-        if iword == 7:    # HEX
-            TEMP.append(float(word))
-        if iword == 8:    # Mainplate
-            TEMP.append(float(word))
-        if iword == 9:    # 4He IC Pump
-            TEMP.append(float(word))
-        if iword == 10:    # 3He IC Pump
-            TEMP.append(float(word))
-        if iword == 11:    # 3He UC Pump
-            TEMP.append(float(word))
-        if iword == 12:    # 4He IC Switch
-            TEMP.append(float(word))
-        if iword == 13:    # 3He IC Switch
-            TEMP.append(float(word))
-        if iword == 14:    # 3He UC Switch
-            TEMP.append(float(word))
-    return TEMP
-
+    return last_entry
