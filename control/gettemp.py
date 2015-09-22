@@ -26,4 +26,6 @@ def gettemp(datafile_path):
         else:
             last_entry.append([row[colname] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)])
 
+    datafile.close()
+
     return last_entry

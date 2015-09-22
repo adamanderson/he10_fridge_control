@@ -22,4 +22,6 @@ def getslope(datafile_path, dt):
     HEX_slope = (HEX_temps[-1] - HEX_temps[0]) / dt
     mainplate_slope = (mainplate_temps[-1] - mainplate_temps[0]) / dt
 
+    datafile.close()
+
     return HEX_slope, mainplate_slope

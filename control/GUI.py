@@ -227,6 +227,11 @@ class MainWindow(wx.Frame):
         wx.MessageBox('Inputted Voltage is out of range \r Voltage remains unchanged', 'Error', wx.OK | wx.ICON_ERROR)
 
     def checkcycle(self,e):
+        # check that a valid data file has been entered
+        if os.path.isfile(self.dataFileBox.GetValue()) == False:
+            wx.MessageBox('Please enter a valid fridge data file!', 'Error', wx.OK | wx.ICON_ERROR)
+            return
+
         if self.canstartcycle:
             self.logBox.AppendText('Starting Automatic Fridge Cycle \n')
             self.canstartcycle=0
