@@ -59,12 +59,20 @@ dt_update = 10  # sec
 # file name
 data_filename = 'data/fridge_data.h5'
 
-# create output files
-f_h5 = tables.open_file(data_filename, mode='w', title='fridge data')
-group_all_data = f_h5.create_group('/', 'data', 'all data')
-table_lakeshore_218_1 = f_h5.create_table(group_all_data, 'LS_218_1', labels_lakeshore_218_1, "Data from Lakeshore 218 #1")
-table_lakeshore_218_2 = f_h5.create_table(group_all_data, 'LS_218_2', labels_lakeshore_218_2, "Data from Lakeshore 218 #2")
-table_lakeshore_350 = f_h5.create_table(group_all_data, 'LS_350', labels_lakeshore_350, "Data from Lakeshore 350")
+# create output file
+f_h5 = tables.open_file(data_filename, mode='a', title='fridge data') # append file, by default
+try:
+    # try pulling the tables from the file, which should work if it exists
+    group_all_data = f_h5.get_node('/data')
+    table_lakeshore_218_1 = f_h5.get_node('/data/LS_218_1')
+    table_lakeshore_218_2 = f_h5.get_node('/data/LS_218_2')
+    table_lakeshore_350 = f_h5.get_node('/data/LS_350')
+except table.NoSuchNodeError:
+    # otherwise, the file presumably doesn't exist and we need new tables
+    group_all_data = f_h5.create_group('/', 'data', 'all data')
+    table_lakeshore_218_1 = f_h5.create_table(group_all_data, 'LS_218_1', labels_lakeshore_218_1, "Data from Lakeshore 218 #1")
+    table_lakeshore_218_2 = f_h5.create_table(group_all_data, 'LS_218_2', labels_lakeshore_218_2, "Data from Lakeshore 218 #2")
+    table_lakeshore_350 = f_h5.create_table(group_all_data, 'LS_350', labels_lakeshore_350, "Data from Lakeshore 350")
 
 # set up serial ports
 lakeshore_218_1 = serial.Serial('/dev/ttyr00', 9600, serial.SEVENBITS, serial.PARITY_ODD, serial.STOPBITS_ONE )
