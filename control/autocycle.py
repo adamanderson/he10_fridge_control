@@ -76,7 +76,9 @@ def autocycle(self, datafile_name):
             self.abortcycle =0
             self.canstartcycle =1
             return
-        sleeptime.sleep(20)
+        for i in range(20):
+            sleeptime.sleep(1)
+            wx.Yield()
         temp = gettemp.gettemp(datafile_name)
         if n:
             if temp[3] > 33:
@@ -114,7 +116,9 @@ def autocycle(self, datafile_name):
            self.canstartcycle =1
            return
 
-        sleeptime.sleep(60)
+        for i in range(60):
+            sleeptime.sleep(1)
+            wx.Yield()
         slopes = getslope.getslope(datafile_name, 60)
         if abs(slopes[1]) < 0.001:
             break
@@ -127,6 +131,8 @@ def autocycle(self, datafile_name):
     ser3.write('APPL N25V, 0 \r\n')
     sleeptime.sleep(2)
     ser3.write('APPL P6V, 5 \r\n')
+    self.logBox.AppendText( 'Waiting for heat exchanger to increase suddenly \n')
+    wx.Yield()
 
     # This loop gets the 5 slopes corresponding to the last five lines in the data file
     # If all the 5 slopes are greater than a particular value, we take that as the HEX increasing
@@ -136,8 +142,10 @@ def autocycle(self, datafile_name):
             self.abortcycle =0
             self.canstartcycle =1
             return
-        sleeptime.sleep(60)
-        slopes=getslope.getslope(dataFileBox, 30)
+        for i in range(60):
+            sleeptime.sleep(1)
+            wx.Yield()
+        slopes=getslope.getslope(datafile_name, 30)
         if slopes[0] > 0.002:
             break
 
@@ -149,6 +157,8 @@ def autocycle(self, datafile_name):
     ser3.write('APPL P25V, 0 \r\n')
     sleeptime.sleep(2)
     ser2.write('APPL P25V, 5 \r\n')
+    self.logBox.AppendText( 'Waiting for heat exchanger and mainplate to settle \n')
+    wx.Yield()
 
     #This loop gets the last 10 slope corresponding to the last ten lines in the data file
     #If all ten slopes for the HEX and mainplate are less than a certain distance from 0, we take that as them being constant.
@@ -158,8 +168,10 @@ def autocycle(self, datafile_name):
             self.abortcycle =0
             self.canstartcycle =1
             return
-        sleeptime.sleep(60)
-        slopes = getslope.getslope(dataFileBox, 60)
+        for i in range(60):
+            sleeptime.sleep(1)
+            wx.Yield()
+        slopes = getslope.getslope(datafile_name, 60)
         if abs(slopes[0]) < 0.0005 and abs(slopes[1]) < 0.001:
             break
 

@@ -231,12 +231,14 @@ class MainWindow(wx.Frame):
         if os.path.isfile(self.dataFileBox.GetValue()) == False:
             wx.MessageBox('Please enter a valid fridge data file!', 'Error', wx.OK | wx.ICON_ERROR)
             return
+        print self.dataFileBox.GetValue()
 
         if self.canstartcycle:
             self.logBox.AppendText('Starting Automatic Fridge Cycle \n')
             self.canstartcycle=0
-            t = threading.Thread(name='autocycle', target=self.autocycle, args=self.dataFileBox.GetValue())
-            t.start()
+            # t = threading.Thread(name='autocycle', target=self.autocycle, args=[self.dataFileBox.GetValue()])
+            self.autocycle(self.dataFileBox.GetValue())
+            # t.start()
         else:
             self.logBox.AppendText('Automatic Fridge Cycle is already running \n')
 

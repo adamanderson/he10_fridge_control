@@ -16,8 +16,8 @@ def getslope(datafile_path, dt):
     datafile = tables.open_file(datafile_path, 'r')
     datatable = datafile.root.data.LS_218_1
     maxtime = [row['record time'] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)]
-    HEX_temps = [row['HEX'] for row in datatable.iterrows() if row['record time'] > maxtime-dt]
-    mainplate_temps = [row['mainplate'] for row in datatable.iterrows() if row['record time'] > maxtime-dt]
+    HEX_temps = [row['HEX'] for row in datatable.iterrows() if row['record time'] > (maxtime[0]-dt)]
+    mainplate_temps = [row['mainplate'] for row in datatable.iterrows() if row['record time'] > (maxtime[0]-dt)]
 
     HEX_slope = (HEX_temps[-1] - HEX_temps[0]) / dt
     mainplate_slope = (mainplate_temps[-1] - mainplate_temps[0]) / dt

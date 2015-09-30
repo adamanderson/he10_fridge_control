@@ -21,10 +21,12 @@ def gettemp(datafile_path):
         if colname == "record time":
             # time data is stored as a UNIX timestamp, and we need to convert
             # this into a Python datetime object
-            time = datetime.fromtimestamp([row[colname] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)])
+            time = [datetime.date.fromtimestamp(row[colname]) for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)]
             last_entry.append(time)
         else:
-            last_entry.append([row[colname] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)])
+            data = [row[colname] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)]
+            for entry in data:
+                last_entry.append(entry)
 
     datafile.close()
 
