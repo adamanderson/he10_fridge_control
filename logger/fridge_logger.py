@@ -94,7 +94,7 @@ address_lakeshore_350_1 = ('192.168.0.12', 7777) # default settings for the lake
 lakeshore_350_1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 lakeshore_350_1.connect(address_lakeshore_350_1)
 lakeshore_350_1.settimeout(1.0)
-address_lakeshore_350_2 = ('192.168.1.6', 7777)  # default settings for the lakeshore 350 #2 (when #1 is plugged in!)
+address_lakeshore_350_2 = ('192.168.2.5', 7777)  # default settings for the lakeshore 350 #2 (when #1 is plugged in!)
 lakeshore_350_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 lakeshore_350_2.connect(address_lakeshore_350_2)
 lakeshore_350_2.settimeout(1.0)
