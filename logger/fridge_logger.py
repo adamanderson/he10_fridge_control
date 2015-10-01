@@ -41,8 +41,8 @@ labels_lakeshore_218_2 = {'record time': tables.Time32Col(pos=0),
                           'channel 3': tables.Float32Col(pos=4),
                           'wiring harness': tables.Float32Col(pos=5),
                           '4K shield near harness': tables.Float32Col(pos=6),
-                          '4K plate near harness': tables.Float32Col(pos=7),
-                          'SQUID board': tables.Float32Col(pos=8),
+                          '3G SQUIDs': tables.Float32Col(pos=7),
+                          'SZ SQUIDs': tables.Float32Col(pos=8),
                           }
 keys_lakeshore_218_2 = ['record time', 'PTC 4K stage', 'PTC 50K stage', 'channel 2', 'channel 3',
                         'wiring harness', '4K shield near harness', '3G SQUIDs',  'SZ SQUIDs']

@@ -105,6 +105,7 @@ def update_plot(table_LS_218_1, table_LS_218_2, table_LS_350_1, table_LS_350_2):
     for col in table_LS_350_1.colnames:
         if col != 'record time':
             plt.plot(plottime_350_1, data_LS_350_1[col], label=col)
+        plt.plot(plottimes_350_2, data_LS_350_2['backplate'], label='backplate')
     plt.ylabel('Temperature [K]',fontsize=10)
     plt.xlabel('Time')
     plt.legend(loc="upper left", prop={'size':7}, bbox_to_anchor=[1.0,1.0], borderpad=.2)
@@ -115,8 +116,8 @@ def update_plot(table_LS_218_1, table_LS_218_2, table_LS_350_1, table_LS_350_2):
     ax5 = plt.subplot(515)
     plt.plot(plottime_350_1, data_LS_218_2['wiring harness'], label='wiring harness')
     plt.plot(plottime_350_1, data_LS_218_2['4K shield near harness'], label='4K shield near harness')
-    plt.plot(plottime_350_1, data_LS_218_2['4K plate near harness'], label='4K plate near harness')
-    plt.plot(plottime_350_1, data_LS_218_2['SQUID board'], label='SQUID board')
+    plt.plot(plottime_350_1, data_LS_218_2['3G SQUIDs'], label='3G SQUIDs')
+    plt.plot(plottime_350_1, data_LS_218_2['SZ SQUIDs'], label='SZ SQUIDs')
     plt.ylabel('Temperature [K]',fontsize=10)
     plt.xlabel('Time')
     plt.legend(loc="upper left", prop={'size':7}, bbox_to_anchor=[1.0,1.0], borderpad=.2)
