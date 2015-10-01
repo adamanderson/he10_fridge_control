@@ -17,6 +17,7 @@ import tables
 import lakeshore218
 import lakeshore350
 import shutil
+import os.path
 
 import plotter
 
@@ -44,7 +45,7 @@ labels_lakeshore_218_2 = {'record time': tables.Time32Col(pos=0),
                           'SQUID board': tables.Float32Col(pos=8),
                           }
 keys_lakeshore_218_2 = ['record time', 'PTC 4K stage', 'PTC 50K stage', 'channel 2', 'channel 3',
-                        'wiring harness', '4K shield near harness', '4K plate near harness',  'SQUID board']
+                        'wiring harness', '4K shield near harness', '3G SQUIDs',  'SZ SQUIDs']
 labels_lakeshore_350_1 = {'record time': tables.Time32Col(pos=0),
                           'UC Head': tables.Float32Col(pos=1),
                           'IC Head': tables.Float32Col(pos=2),
@@ -64,10 +65,16 @@ keys_lakeshore_350_2 = ['record time', 'backplate', 'channel B', 'channel C', 'c
 dt_update = 10  # sec
 
 # file name
-data_filename = 'data/fridge_data.h5'
+data_filename = raw_input('Enter relative path to data file (must end in .h5): ')
+if os.path.isfile(data_filename) == True:
+    print data_filename + ' already exists. Attempting to append data to end of file. If thermometer names differ in the existing file, this may fail.'
+    pytables_mode = 'a'
+else:
+    print 'Attempting to create data file ' + data_filename '.'
+    pytables_mode = 'w'
 
 # create output file
-f_h5 = tables.open_file(data_filename, mode='a', title='fridge data') # append file, by default
+f_h5 = tables.open_file(data_filename, mode=pytables_mode, title='fridge data') # append file, by default
 try:
     # try pulling the tables from the file, which should work if it exists
     group_all_data = f_h5.get_node('/data')
