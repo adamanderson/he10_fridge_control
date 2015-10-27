@@ -30,9 +30,11 @@ channel_map = {'/dev/ttyr00':   ['HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump
                '192.168.2.5':   ['backplate', 'channel B', 'channel C', 'channel D']}
 
 # Specify the variables to be plotted in each subplot of the display. This
-# should be a list of lists of strings, where each list contains the variables
-# contained in one subplot, and each string should be one of the variable names
-# in the 'channel_map' above
+# should be a list of lists of (1 or 2) lists of strings, where each outer list contains the variables
+# contained in one subplot, the collections of 1 or 2 lists indicated whether
+# one or two y-axis scales should be used, and the variable names in the
+# final lists are the names from 'channel_map' above which should be mapped to
+# each y-axis scale.
 plot_list = [[['He4 IC Pump', 'He3 IC Pump', 'He3 UC Pump'], ['He4 IC Switch', 'He3 IC Switch', 'He3 UC Switch']],
              [['HEX', 'mainplate']],
              [['PTC 4K stage'], ['PTC 50K stage']],

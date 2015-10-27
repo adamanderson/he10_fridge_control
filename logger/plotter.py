@@ -15,6 +15,26 @@ import datetime
 import numpy as np
 
 def update_plot(tables_list, plot_list):
+    '''
+    update_plot(tables_list, plot_list)
+
+    Updates a png figure containing the fridge readout plots.
+
+    Parameters:
+    -----------
+    tables_list:  list of PyTables tables, containing (possibly a superset of)
+                  the data to plot
+    plot_list:    list of lists of (1 or 2) lists of strings indicating the 
+                  variables to plot; names must match tables_list; use 1 or 2 lists
+                  of strings for 1 or two separate y-axes with different scales
+                  on the left and right sides of the subplot
+
+    Returns:
+    --------
+    (None)
+
+    NB: Output figure is saved to a hardcoded path!
+    '''
     time_to_show = 3600 #[s]
     num_subplots = len(plot_list)
 
