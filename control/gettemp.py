@@ -11,23 +11,14 @@
 import tables
 import datetime
 
-def gettemp(datafile_path):
-    last_entry = []
-
+def gettemp(datafile_path, sensor_name):
     # open pytables file
     datafile = tables.open_file(datafile_path, 'r')
-    datatable = datafile.root.data.LS_218_1
-    for colname in datatable.colnames:
-        if colname == "record time":
-            # time data is stored as a UNIX timestamp, and we need to convert
-            # this into a Python datetime object
-            time = [datetime.date.fromtimestamp(row[colname]) for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)]
-            last_entry.append(time)
-        else:
-            data = [row[colname] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)]
-            for entry in data:
-                last_entry.append(entry)
+    datatable = datafile.get_node('/data/' + sensor_name.replace(' ', '_'))
+
+    # get the latest temperature from the data file
+    sensor_value = [row[sensor_name] for row in datatable.iterrows(start=datatable.nrows-1, stop=datatable.nrows)][0]
 
     datafile.close()
 
-    return last_entry
+    return sensor_value

@@ -15,6 +15,7 @@ import time
 import numpy as np
 import tables
 import os.path
+import shutil
 
 import plotter
 
@@ -139,6 +140,12 @@ try:
 
         # update the plots
         plotter.update_plot(tables_list, plot_list)
+
+        # make a copy of the data file; useful for other processes that need
+        # access to the latest data since we cannot do simultaneous read/write
+        # of pytables files
+        shutil.copyfile(data_filename, data_filename + str('.lock'))
+        shutil.move(data_filename + str('.lock'), data_filename.strip('.h5') + '_read.h5')
 
         # wait before reading again
         time.sleep(dt_update)

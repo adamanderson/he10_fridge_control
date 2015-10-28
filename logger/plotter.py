@@ -22,9 +22,9 @@ def update_plot(tables_list, plot_list):
 
     Parameters:
     -----------
-    tables_list:  list of PyTables tables, containing (possibly a superset of)
+    tables_list:  dictionary of PyTables tables, containing (possibly a superset of)
                   the data to plot
-    plot_list:    list of lists of (1 or 2) lists of strings indicating the 
+    plot_list:    list of lists of (1 or 2) lists of strings indicating the
                   variables to plot; names must match tables_list; use 1 or 2 lists
                   of strings for 1 or two separate y-axes with different scales
                   on the left and right sides of the subplot
@@ -38,34 +38,39 @@ def update_plot(tables_list, plot_list):
     time_to_show = 3600 #[s]
     num_subplots = len(plot_list)
 
+    mpl.rc('xtick', labelsize=8)
+    mpl.rc('ytick', labelsize=8)
+
     f = plt.figure(1,figsize=(7,10))
 
     for jplot in range(len(plot_list)):
         # make one subplot per entry in plot_list
         ax = plt.subplot(num_subplots*100 + 10 + jplot+1)
-        
-        l1 = []
-        l2 = []
+
+        lines = []
         for var in plot_list[jplot][0]:
             maxtime = [row['time'] for row in tables_list[var].iterrows(start=tables_list[var].nrows-1, stop=tables_list[var].nrows)]
             time_1 = np.array([x['time'] for x in tables_list[var].iterrows() if x['time']>(maxtime[0]-time_to_show)])
             plottime_1 = [datetime.datetime.fromtimestamp(ts) for ts in time_1]
             coldata = np.array([x[var] for x in tables_list[var].iterrows() if x['time']>(maxtime[0]-time_to_show)])
-            l1 = plt.plot(plottime_1, coldata, label=var)
-            plt.ylabel('Temperature [K]',fontsize=10)
+            l = plt.plot(plottime_1, coldata, label=var)
+            lines = lines + l
+            plt.ylabel('temp. [K]',fontsize=10)
         # add another axis if indicated by plot_list argument
         if len(plot_list[jplot]) == 2:
+            plt.ylabel('temp. (solid) [K]',fontsize=10)
             ax_twin = ax.twinx()
             for var in plot_list[jplot][1]:
                 maxtime = [row['time'] for row in tables_list[var].iterrows(start=tables_list[var].nrows-1, stop=tables_list[var].nrows)]
                 time_1 = np.array([x['time'] for x in tables_list[var].iterrows() if x['time']>(maxtime[0]-time_to_show)])
                 plottime_1 = [datetime.datetime.fromtimestamp(ts) for ts in time_1]
                 coldata = np.array([x[var] for x in tables_list[var].iterrows() if x['time']>(maxtime[0]-time_to_show)])
-                l2 = plt.plot(plottime_1, coldata, label=var, linestyle='--')
-        
-                lns = l1+l2
-                labs = [l.get_label() for l in lns]
-                ax.legend(lns, labs, loc='upper left', prop={'size':7}, bbox_to_anchor=[1.1,1.0], borderpad=.2)
+                l = plt.plot(plottime_1, coldata, label=var, linestyle='--')
+                lines = lines + l
+
+            labs = [li.get_label() for li in lines]
+            ax.legend(lines, labs, loc='upper left', prop={'size':7}, bbox_to_anchor=[1.1,1.0], borderpad=.2)
+            plt.ylabel('temp. (dashed) [K]',fontsize=10)
         else:
             plt.legend(loc='upper left', prop={'size':7}, bbox_to_anchor=[1.0,1.0], borderpad=.2)
 

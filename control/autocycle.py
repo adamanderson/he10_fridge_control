@@ -79,29 +79,31 @@ def autocycle(self, datafile_name):
         for i in range(20):
             sleeptime.sleep(1)
             wx.Yield()
-        temp = gettemp.gettemp(datafile_name)
         if n:
-            if temp[3] > 33:
+            if gettemp.gettemp(datafile_name, 'He4 IC Pump') > 33:
                 sleeptime.sleep(2)
                 self.logBox.AppendText( 'Lowering 4He IC Pump voltage to -4.5V \n')
                 wx.Yield()
                 ser3.write('APPL N25V, -4.5 \r\n')
                 n=0
         if m:
-            if temp[4]>47:
+            if gettemp.gettemp(datafile_name, 'He3 IC Pump')> 47:
                 sleeptime.sleep(2)
                 self.logBox.AppendText( 'Lowering 3He IC Pump voltage to 4.55V \n')
                 wx.Yield()
                 ser3.write('APPL P25V, 4.55 \r\n')
                 m=0
         if l:
-            if temp[5]>47:
+            if gettemp.gettemp(datafile_name, 'He3 UC Pump') > 47:
                 sleeptime.sleep(2)
                 self.logBox.AppendText( 'Lowering 3He UC Pump voltage to -6.72V \n')
                 wx.Yield()
                 ser2.write('APPL N25V, -6.72 \r\n')
                 l=0
-        if n==0 and m==0 and l==0 and temp[6]<8 and temp[7]<8 and temp[8]<8:
+        if n==0 and m==0 and l==0 and \
+            gettemp.gettemp(datafile_name, 'He4 IC Switch') < 8 and \
+            gettemp.gettemp(datafile_name, 'He3 IC Switch') < 8 and \
+            gettemp.gettemp(datafile_name, 'He3 UC Switch') < 8:
             break
 
     self.logBox.AppendText( 'Waiting for mainplate to settle \n')
@@ -119,8 +121,8 @@ def autocycle(self, datafile_name):
         for i in range(60):
             sleeptime.sleep(1)
             wx.Yield()
-        slopes = getslope.getslope(datafile_name, 60)
-        if abs(slopes[1]) < 0.001:
+        slope = getslope.getslope(datafile_name, 'mainplate', 60)
+        if abs(slope) < 0.001:
             break
 
     self.logBox.AppendText( 'Mainplate has settled \n')
@@ -145,8 +147,8 @@ def autocycle(self, datafile_name):
         for i in range(60):
             sleeptime.sleep(1)
             wx.Yield()
-        slopes=getslope.getslope(datafile_name, 30)
-        if slopes[0] > 0.002:
+        slope = getslope.getslope(datafile_name, 'HEX', 30)
+        if slope > 0.002:
             break
 
     self.logBox.AppendText( 'HEX has started increasing \n')
@@ -171,8 +173,9 @@ def autocycle(self, datafile_name):
         for i in range(60):
             sleeptime.sleep(1)
             wx.Yield()
-        slopes = getslope.getslope(datafile_name, 60)
-        if abs(slopes[0]) < 0.0005 and abs(slopes[1]) < 0.001:
+        hex_slope = getslope.getslope(datafile_name, 'HEX', 60)
+        mainplate_slope = getslope.getslope(datafile_name, 'mainplate', 60)
+        if abs(hex_slope) < 0.0005 and abs(mainplate_slope) < 0.001:
             break
 
     self.logBox.AppendText( 'Now turning off 3He UC Pump and turning on switch \n')
