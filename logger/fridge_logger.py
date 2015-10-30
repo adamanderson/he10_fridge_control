@@ -60,7 +60,7 @@ def deunderscoreify(string):
 dt_update = 10  # sec
 
 # file name
-data_filename = raw_input('Enter relative path to data file (must end in .h5): ')
+data_filename = raw_input('Enter relative path to data file (must end in .h5). NB: If enter an existing filename, the script will attempt to append that file, by default: ')
 if os.path.isfile(data_filename) == True:
     print data_filename + ' already exists. Attempting to append data to end of file. If thermometer names differ in the existing file, this may fail.'
     pytables_mode = 'a'
