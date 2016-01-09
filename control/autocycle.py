@@ -28,6 +28,24 @@ ser3 = serial.Serial(
 
 
 def autocycle(self, datafile_name):
+  
+    #Turning off the Pumps 
+    self.logBox.AppendText( 'Turning the 4He IC Pump to 0 V \n')
+    wx.Yield()
+    ser3.write('APPL N25V, -0 \r\n') #turn on 4HE IC Pump
+    sleeptime.sleep(2)
+    self.logBox.AppendText( 'Turning on 3He IC Pump to 0V \n')
+    wx.Yield()
+    ser3.write('APPL P25V, 0 \r\n') #turn on 3He IC Pump
+    sleeptime.sleep(2)
+    self.logBox.AppendText( 'Turning on 3He UC Pump to -0V \n')
+    wx.Yield()
+    ser2.write('APPL N25V, -0 \r\n')#turn on 3He UC Pump
+    sleeptime.sleep(2)
+
+    #Turning off the Switches
+    self.logBox.AppendText( 'Waiting for switches to cool below 8 K \n')
+
     sleeptime.sleep(2)
     self.logBox.AppendText( 'Turning off 4He IC Switch \n')
     wx.Yield()
@@ -41,16 +59,41 @@ def autocycle(self, datafile_name):
     wx.Yield()
     ser2.write('APPL P6V, 0 \r\n') #turns off 3HE UC Switch
     sleeptime.sleep(2)
-    if self.abortcycle:
-        self.logBox.AppendText('ABORTING AUTOMATIC FRIDGE CYCLE \n')
-        self.abortcycle =0
-        self.canstartcycle =1
-        return
 
+    while 1:
+        sleeptime.sleep(2)
+        if self.abortcycle:
+            self.logBox.AppendText('ABORTING AUTOMATIC FRIDGE CYCLE \n')
+            self.abortcycle =0
+            self.canstartcycle =1
+            return
+        if gettemp.gettemp(datafile_name, 'He4 IC Switch') < 8 and \
+            gettemp.gettemp(datafile_name, 'He3 IC Switch') < 13 and \
+            gettemp.gettemp(datafile_name, 'He3 UC Switch') < 8:
+            break
+
+    #Heat 4HE IC pump first, then do other He3 pumps next
     self.logBox.AppendText( 'Turning on 4He IC Pump to -25 V \n')
     wx.Yield()
     ser3.write('APPL N25V, -25 \r\n') #turn on 4HE IC Pump
     sleeptime.sleep(2)
+    
+    while 1:
+        sleeptime.sleep(2)
+        wx.Yield()
+        if self.abortcycle:
+            self.logBox.AppendText('ABORTING AUTOMATIC FRIDGE CYCLE \n')
+            self.abortcycle =0
+            self.canstartcycle =1
+            return
+        if gettemp.gettemp(datafile_name, 'He4 IC Pump') > 33:
+            sleeptime.sleep(2)
+            self.logBox.AppendText( 'Lowering 4He IC Pump voltage to -4.5V \n')
+            wx.Yield()
+            ser3.write('APPL N25V, -4.5 \r\n')
+            break 
+
+    #Heat 3He pumps 
     self.logBox.AppendText( 'Turning on 3He IC Pump to 25V \n')
     wx.Yield()
     ser3.write('APPL P25V, 25 \r\n') #turn on 3He IC Pump
@@ -109,8 +152,10 @@ def autocycle(self, datafile_name):
     self.logBox.AppendText( 'Waiting for mainplate to settle \n')
     wx.Yield()
 
-
     #Checks to see if Mainplate has settled by checking the last 10 slopes in the datafile.
+    #wait 10 minutes before checking
+    sleeptime.sleep(600)
+
     while 1:
         if self.abortcycle:
            self.logBox.AppendText('ABORTING AUTOMATIC FRIDGE CYCLE \n')
@@ -138,6 +183,9 @@ def autocycle(self, datafile_name):
 
     # This loop gets the 5 slopes corresponding to the last five lines in the data file
     # If all the 5 slopes are greater than a particular value, we take that as the HEX increasing
+    #wait 10 minutes before checking
+    sleeptime.sleep(600)
+
     while 1:
         if self.abortcycle:
             self.logBox.AppendText('ABORTING AUTOMATIC FRIDGE CYCLE \n')
@@ -147,8 +195,8 @@ def autocycle(self, datafile_name):
         for i in range(60):
             sleeptime.sleep(1)
             wx.Yield()
-        slope = getslope.getslope(datafile_name, 'HEX', 30)
-        if slope > 0.002:
+        slope = getslope.getslope(datafile_name, 'HEX', 60)
+        if slope > 0.003:
             break
 
     self.logBox.AppendText( 'HEX has started increasing \n')
@@ -173,9 +221,8 @@ def autocycle(self, datafile_name):
         for i in range(60):
             sleeptime.sleep(1)
             wx.Yield()
-        hex_slope = getslope.getslope(datafile_name, 'HEX', 60)
         mainplate_slope = getslope.getslope(datafile_name, 'mainplate', 60)
-        if abs(hex_slope) < 0.0005 and abs(mainplate_slope) < 0.001:
+        if abs(mainplate_slope) < 0.001:
             break
 
     self.logBox.AppendText( 'Now turning off 3He UC Pump and turning on switch \n')
