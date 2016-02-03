@@ -246,6 +246,7 @@ class MainWindow(wx.Frame):
         if self.canstartcycle==0:
             self.logBox.AppendText('Trying to stop Automatic Fridge Cycle \n')
             self.abortcycle = 1
+            self.canstartcycle = 1
         else:
             self.logBox.AppendText('Automatic Fridge Cycle is Currently not running \n')
 

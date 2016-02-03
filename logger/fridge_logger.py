@@ -26,9 +26,9 @@ import plotter
 channel_map = {'/dev/ttyr00':   ['HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump',
                                  'He3 UC Pump', 'He4 IC Switch', 'He3 IC Switch',  'He3 UC Switch'],
                '/dev/ttyr01':   ['PTC 4K stage', 'PTC 50K stage', 'channel 2', 'channel 3',
-                                 'wiring harness', '4K shield near harness', '3G SQUIDs',  'SZ SQUIDs'],
-               '192.168.0.12':  ['UC Head', 'IC Head', 'LC shield', 'LC board'],
-               '192.168.2.5':   ['backplate', 'channel B', 'channel C', 'channel D']}
+                                 'wiring harness', '4K shield near harness', 'SQUID 5',  'SQUID 7'],
+               '192.168.0.12':  ['UC Head', 'IC Head', 'LC shield', 'wafer holder'],
+               '192.168.2.5':   ['backplate', '3G IC head', '3G UC head', '3G 4He head']}
 
 # Specify the variables to be plotted in each subplot of the display. This
 # should be a list of lists of (1 or 2) lists of strings, where each outer list contains the variables
@@ -39,8 +39,9 @@ channel_map = {'/dev/ttyr00':   ['HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump
 plot_list = [[['He4 IC Pump', 'He3 IC Pump', 'He3 UC Pump'], ['He4 IC Switch', 'He3 IC Switch', 'He3 UC Switch']],
              [['HEX', 'mainplate']],
              [['PTC 4K stage'], ['PTC 50K stage']],
-             [['UC Head', 'IC Head', 'LC shield', 'LC board']],
-             [['wiring harness', '4K shield near harness', '3G SQUIDs', 'SZ SQUIDs']]]
+             [['UC Head', 'IC Head', 'LC shield', 'wafer holder', 'backplate']],
+             [['wiring harness', '4K shield near harness', 'SQUID 5', 'SQUID 7']],
+             [['3G 4He head', '3G UC head'], ['3G IC head']]]
 
 # Specify mapping of {"interface" -> "human-readable description"}. This isn't
 # used for anything specific right now, but it is worth having some more human-
@@ -57,7 +58,7 @@ def deunderscoreify(string):
 
 
 # update frequency
-dt_update = 10  # sec
+dt_update = 2  # sec changed to 1 sec for RT
 
 # file name
 data_filename = raw_input('Enter relative path to data file (must end in .h5). NB: If enter an existing filename, the script will attempt to append that file, by default: ')
@@ -119,24 +120,45 @@ try:
         # wait for devices to issue a response
         time.sleep(0.2)
 
-        # read the responses
+        # read the responses for serial interfaces
         for interface_name in serial_interfaces:
             raw_output = serial_interfaces[interface_name].read(serial_interfaces[interface_name].inWaiting())
-            for jValue in range(len(channel_map[interface_name])):
-                channel_name = channel_map[interface_name][jValue]
+
+            print interface_name
+            print raw_output
+
+            # check that we actually got a response with data in it (occasionally the MOXA
+            # is non-responsive), otherwise do nothing
+            if len(raw_output.split(',')) > 0:
+                for jValue in range(len(channel_map[interface_name])):
+                    channel_name = channel_map[interface_name][jValue]
+                    tables_list[channel_name].row['time'] = current_time
+                    tables_list[channel_name].row[channel_name] = float(raw_output.split(',')[jValue])
+                    tables_list[channel_name].row.append()
+                    tables_list[channel_name].flush()
+        
+        # for the TCP interfaces, also get the raw sensor values and substitute these
+        # in for the temperature if the temperature reads exactly zero
+        raw_output_temp = dict()
+        raw_output_resist = dict()
+        for interface_address in tcp_interfaces:
+            raw_output_temp[interface_address], _ = tcp_interfaces[interface_address].recvfrom(2048)
+        for interface_address in tcp_interfaces:
+            tcp_interfaces[interface_address].sendto('SRDG? 0\r\n', (interface_address, 7777))
+        time.sleep(0.2)
+        for interface_address in tcp_interfaces:
+            raw_output_resist[interface_address], _ = tcp_interfaces[interface_address].recvfrom(2048)
+        for interface_address in tcp_interfaces:
+            for jValue in range(len(channel_map[interface_address])):
+                channel_name = channel_map[interface_address][jValue]
                 tables_list[channel_name].row['time'] = current_time
-                tables_list[channel_name].row[channel_name] = float(raw_output.split(',')[jValue])
+                if float(raw_output_temp[interface_address].split(',')[jValue]) == 0.0:
+                    tables_list[channel_name].row[channel_name] = float(raw_output_resist[interface_address].split(',')[jValue])
+                else:
+                    tables_list[channel_name].row[channel_name] = float(raw_output_temp[interface_address].split(',')[jValue])
                 tables_list[channel_name].row.append()
                 tables_list[channel_name].flush()
 
-        for interface_name in tcp_interfaces:
-            raw_output, _ = tcp_interfaces[interface_name].recvfrom(2048)
-            for jValue in range(len(channel_map[interface_name])):
-                channel_name = channel_map[interface_name][jValue]
-                tables_list[channel_name].row['time'] = current_time
-                tables_list[channel_name].row[channel_name] = float(raw_output.split(',')[jValue])
-                tables_list[channel_name].row.append()
-                tables_list[channel_name].flush()
 
         # update the plots
         plotter.update_plot(tables_list, plot_list)

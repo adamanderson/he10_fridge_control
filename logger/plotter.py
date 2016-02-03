@@ -41,7 +41,7 @@ def update_plot(tables_list, plot_list):
     mpl.rc('xtick', labelsize=8)
     mpl.rc('ytick', labelsize=8)
 
-    f = plt.figure(1,figsize=(7,10))
+    f = plt.figure(1,figsize=(7,12))
 
     for jplot in range(len(plot_list)):
         # make one subplot per entry in plot_list
