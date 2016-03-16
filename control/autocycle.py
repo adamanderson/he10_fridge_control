@@ -68,7 +68,7 @@ def run(datafile_name, parent, messageevent, killevent):
     isHe4ICHigh, isHe3ICHigh, isHe3UCHigh = True, True, True
     while gettemp.gettemp(datafile_name, 'He4 IC Switch') > 8 or \
           gettemp.gettemp(datafile_name, 'He3 IC Switch') > 8 or \
-          gettemp.gettemp(datafile_name, 'He3 UC Switch') > 8 or
+          gettemp.gettemp(datafile_name, 'He3 UC Switch') > 8 or \
           isHe4ICHigh or isHe3ICHigh or isHe3UCHigh:
         if self.waitforkill(2, killevent): return
 
@@ -130,6 +130,7 @@ def run(datafile_name, parent, messageevent, killevent):
     self.logBox.AppendText( 'Cycle is complete \n ')
 
 
-if __name__ == __main__:
+if __name__ == '__main__':
     # when running as a standalone script, redirect messageevents to the
     # terminal via a dummy parent object
+    print 'Starting autocycle...'

@@ -5,6 +5,7 @@ import time
 import datetime
 import threading
 import autocycle
+import powersupply
 
 LoggingEvent, EVT_LOGGING = wx.lib.newevent.NewEvent()
 
@@ -14,13 +15,13 @@ class MainWindow(wx.Frame):
         self.abortcycle = threading.Event()
         self.cyclerunning = False
 
-        # bind logging event to function that updates the log
-        self.Bind(EVT_LOGGING, self.logging_action)
-
         # A "-1" in the size parameter instructs wxWidgets to use the default size.
         # In this case, we select 200px width and the default height.
         wx.Frame.__init__(self, parent, title=title, size=(400, 800))
         self.CreateStatusBar() # A Statusbar in the bottom of the window
+
+        # bind logging event to function that updates the log
+        self.Bind(EVT_LOGGING, self.logging_action)
 
         # text box to set the data file path
         self.dataFileBoxLabel = wx.StaticText(self, -1, "Fridge log file:")
@@ -50,13 +51,13 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.he3ucsetvolt_action, self.he3ucsetvolt)
 
         # buttons for the stage switches
-        self.he4icswitch = wx.ToggleButton(self, -1, label="4He IC switch", size=(120,50))
-        self.he3icswitch = wx.ToggleButton(self, -1, label="3He IC switch", size=(120,50))
-        self.he3ucswitch = wx.ToggleButton(self, -1, label="3He UC switch", size=(120,50))
+        self.he4ICswitch_button = wx.ToggleButton(self, -1, label="4He IC switch", size=(120,50))
+        self.he3ICswitch_button = wx.ToggleButton(self, -1, label="3He IC switch", size=(120,50))
+        self.he3UCswitch_button = wx.ToggleButton(self, -1, label="3He UC switch", size=(120,50))
         # binds switches buttons to function
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.he4icsetvolt_action, self.he4icswitch)
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3icsetvolt_action, self.he3icswitch)
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3ucsetvolt_action, self.he3ucswitch)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he4icsetvolt_action, self.he4ICswitch_button)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3icsetvolt_action, self.he3ICswitch_button)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3ucsetvolt_action, self.he3UCswitch_button)
 
         # button to get current voltages
         self.voltagebutton = wx.Button(self, -1, label="Current Voltages", size=(125,50))
@@ -93,19 +94,19 @@ class MainWindow(wx.Frame):
         self.he3UC_sizer.Add(self.he3ucsetvolt,1,wx.ALL|wx.CENTER)
 
         self.setswitchsizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.setswitchsizer.Add(self.he4IC_switch_button,1,wx.ALL|wx.CENTER)
-        self.setswitchsizer.Add(self.he3IC_switch_button,1,wx.ALL|wx.CENTER)
-        self.setswitchsizer.Add(self.he3UC_switch_button,1,wx.ALL|wx.CENTER)
+        self.setswitchsizer.Add(self.he4ICswitch_button,1,wx.ALL|wx.CENTER)
+        self.setswitchsizer.Add(self.he3ICswitch_button,1,wx.ALL|wx.CENTER)
+        self.setswitchsizer.Add(self.he3UCswitch_button,1,wx.ALL|wx.CENTER)
 
         self.pumpsizer = wx.BoxSizer(wx.VERTICAL)
         for text in self.heatervoltagetext:
-            if 'pump' in text.label:
-                self.pumpsizer.Add(text, 1, wx.ALL|wx.CENTER, 10)
+            if 'pump' in self.heatervoltagetext[text].Label:
+                self.pumpsizer.Add(self.heatervoltagetext[text], 1, wx.ALL|wx.CENTER, 10)
 
         self.switchsizer = wx.BoxSizer(wx.VERTICAL)
         for text in self.heatervoltagetext:
-            if 'switch' in text.label:
-                self.switchsizer.Add(text, 1, wx.ALL|wx.CENTER, 10)
+            if 'switch' in self.heatervoltagetext[text].Label:
+                self.switchsizer.Add(self.heatervoltagetext[text], 1, wx.ALL|wx.CENTER, 10)
 
         self.voltagesizer = wx.BoxSizer(wx.HORIZONTAL)
         self.voltagesizer.Add(self.pumpsizer, 1,wx.ALL|wx.CENTER,5)
@@ -154,9 +155,9 @@ class MainWindow(wx.Frame):
     def he4icsetvolt_action(self, event):
         powersupply.set_voltage('4He pump', float(self.he4IC_voltage_scroll.GetValue().strip()))
     def he3icsetvolt_action(self, event):
-        powersupply.set_voltage('IC pump', float(self.he4IC_voltage_scroll.GetValue().strip()))
+        powersupply.set_voltage('IC pump', float(self.he3IC_voltage_scroll.GetValue().strip()))
     def he3ucsetvolt_action(self, event):
-        powersupply.set_voltage('UC pump', float(self.he4IC_voltage_scroll.GetValue().strip()))
+        powersupply.set_voltage('UC pump', float(self.he3UC_voltage_scroll.GetValue().strip()))
 
     def switch_action(self, event, switchname):
         obj = event.GetEventObject()
@@ -166,12 +167,12 @@ class MainWindow(wx.Frame):
         else: #if the button is not pressed, then the switch turns off
             powersupply.set_voltage(switchname, 0.0)
             self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned OFF \r')
-    def he4icsetvolt_action(self, event):
-        return switch_action(self, event, '4He switch')
-    def he3icsetvolt_action(self, event):
-        return switch_action(self, event, 'IC switch')
+    def he4icswitch_action(self, event):
+        return switch_action(self, event, 'He4 IC switch')
+    def he3icswitch_action(self, event):
+        return switch_action(self, event, 'He3 IC switch')
     def he3ucswitch_action(self, event):
-        return switch_action(self, event, 'UC switch')
+        return switch_action(self, event, 'He3 UC switch')
 
     def voltagebutton_action(self, event):
         for name in powersupply.heaternames:
