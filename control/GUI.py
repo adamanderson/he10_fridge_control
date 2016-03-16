@@ -1,16 +1,23 @@
 import time as sleeptime
 import wx
+import wx.lib.newevent
 import os
 import voltages
 import time
 import datetime
 import threading
-class MainWindow(wx.Frame):
-    from autocycle import autocycle
-    def __init__(self, parent, title):
+import autocycle
 
-        self.canstartcycle = 1
-        self.abortcycle = 0
+LoggingEvent, EVT_LOGGING = wx.lib.newevent.NewEvent()
+
+class MainWindow(wx.Frame):
+    def __init__(self, parent, title):
+        # event object which lets the user kill the autocycle
+        self.abortcycle = threading.Event()
+        self.cyclerunning = False
+
+        # bind logging event to function that updates the log
+        self.Bind(EVT_LOGGING, self.logging_action)
 
         # A "-1" in the size parameter instructs wxWidgets to use the default size.
         # In this case, we select 200px width and the default height.
@@ -22,11 +29,14 @@ class MainWindow(wx.Frame):
         self.dataFileBox = wx.TextCtrl(self, -1, "none selected", size=(200, 30), style=wx.TE_READONLY)
         self.dataFileButton = wx.Button(self, -1, 'choose file')
 
-#       make log box
+        # make log box
         self.logBox = wx.TextCtrl(self, -1,'', wx.DefaultPosition, wx.DefaultSize, wx.TE_MULTILINE)
         self.logBox.SetEditable(False)
 
-#       text box and buttons for controlling pump voltages
+        # bind file selector button to function
+        self.Bind(wx.EVT_BUTTON, self.OnOpen, self.dataFileButton)
+
+        # text box and buttons for controlling pump voltages
         self.he4icpumptext = wx.StaticText(self, label='4He IC Pump \n [-25V - 0V]')
         self.he4IC_voltage_scroll = wx.TextCtrl(self, -1, "0.00", size=(60,50))
         self.he4icsetvolt = wx.Button(self, -1, "Set Voltage")
@@ -36,40 +46,31 @@ class MainWindow(wx.Frame):
         self.he3ucpumptext = wx.StaticText(self,label='3He UC Pump \n [-25V - 0V]')
         self.he3UC_voltage_scroll =  wx.TextCtrl(self, -1, "0.00",size =(60,50))
         self.he3ucsetvolt = wx.Button(self, -1, "Set Voltage")
+        # binds pump voltage buttons to function
+        self.Bind(wx.EVT_BUTTON, self.he4icsetvolt_action, self.he4icsetvolt)
+        self.Bind(wx.EVT_BUTTON, self.he3icsetvolt_action, self.he3icsetvolt)
+        self.Bind(wx.EVT_BUTTON, self.he3ucsetvolt_action, self.he3ucsetvolt)
 
-        # bind file selector button to function
-        self.Bind(wx.EVT_BUTTON, self.OnOpen, self.dataFileButton)
+        # buttons for the stage switches
+        self.he4icswitch = wx.ToggleButton(self, -1, label="4He IC switch", size=(120,50))
+        self.he3icswitch = wx.ToggleButton(self, -1, label="3He IC switch", size=(120,50))
+        self.he3ucswitch = wx.ToggleButton(self, -1, label="3He UC switch", size=(120,50))
+        # binds switches buttons to function
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he4icsetvolt_action, self.he4icswitch)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3icsetvolt_action, self.he3icswitch)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3ucsetvolt_action, self.he3ucswitch)
 
-#       binds pump voltage buttons to function
-        self.Bind(wx.EVT_BUTTON, self.SetVoltage, self.he4icsetvolt)
-        self.Bind(wx.EVT_BUTTON, self.SetVoltage, self.he3icsetvolt)
-        self.Bind(wx.EVT_BUTTON, self.SetVoltage, self.he3ucsetvolt)
-
-#        buttons for the stage switches
-        self.he4IC_switch_button = wx.ToggleButton(self, -1, label="4He IC switch", size=(120,50))
-        self.he3IC_switch_button = wx.ToggleButton(self, -1, label="3He IC switch", size=(120,50))
-        self.he3UC_switch_button = wx.ToggleButton(self, -1, label="3He UC switch", size=(120,50))
-#       binds switches buttons to function
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleSwitch, self.he4IC_switch_button)
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleSwitch, self.he3IC_switch_button)
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleSwitch, self.he3UC_switch_button)
-
-#       button to get current voltages
+        # button to get current voltages
         self.voltagebutton = wx.Button(self, -1, label="Current Voltages", size=(125,50))
-        self.Bind(wx.EVT_BUTTON, self.GetVoltages, self.voltagebutton)
+        self.Bind(wx.EVT_BUTTON, self.voltagebutton_action, self.voltagebutton)
 
-        self.he4icpumpvolt=wx.StaticText(self, label='4He IC Pump:')
-        self.he3icpumpvolt=wx.StaticText(self, label='3He IC Pump: ')
-        self.he3ucpumpvolt=wx.StaticText(self, label='3He UC Pump: ')
-
-        self.he4icswitchvolt=wx.StaticText(self, label='4He IC Switch: ')
-        self.he3icswitchvolt=wx.StaticText(self, label='3He IC Switch: ')
-        self.he3ucswitchvolt=wx.StaticText(self, label='3He UC Switch: ')
+        # pump/switch heater voltages
+        self.heatervoltagetext = {name: wx.StaticText(self, label=name) for name in powersupply.heaternames}
 
         self.autocyclestart = wx.Button(self,-1,label="Start")
         self.autocyclestop = wx.Button(self, -1, label="Stop")
-        self.Bind(wx.EVT_BUTTON, self.checkcycle , self.autocyclestart)
-        self.Bind(wx.EVT_BUTTON, self.stopcycle , self.autocyclestop)
+        self.Bind(wx.EVT_BUTTON, self.startcycle_action, self.autocyclestart)
+        self.Bind(wx.EVT_BUTTON, self.stopcycle_action, self.autocyclestop)
 
         # sizer for the file field
         self.file_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -99,14 +100,14 @@ class MainWindow(wx.Frame):
         self.setswitchsizer.Add(self.he3UC_switch_button,1,wx.ALL|wx.CENTER)
 
         self.pumpsizer = wx.BoxSizer(wx.VERTICAL)
-        self.pumpsizer.Add(self.he4icpumpvolt, 1,wx.ALL|wx.CENTER,10)
-        self.pumpsizer.Add(self.he3icpumpvolt, 1,wx.ALL|wx.CENTER,10)
-        self.pumpsizer.Add(self.he3ucpumpvolt, 1,wx.ALL|wx.CENTER,10)
+        for text in self.heatervoltagetext:
+            if 'pump' in text.label:
+                self.pumpsizer.Add(text, 1, wx.ALL|wx.CENTER, 10)
 
         self.switchsizer = wx.BoxSizer(wx.VERTICAL)
-        self.switchsizer.Add(self.he4icswitchvolt, 1,wx.ALL|wx.CENTER,10)
-        self.switchsizer.Add(self.he3icswitchvolt, 1,wx.ALL|wx.CENTER,10)
-        self.switchsizer.Add(self.he3ucswitchvolt, 1,wx.ALL|wx.CENTER,10)
+        for text in self.heatervoltagetext:
+            if 'switch' in text.label:
+                self.switchsizer.Add(text, 1, wx.ALL|wx.CENTER, 10)
 
         self.voltagesizer = wx.BoxSizer(wx.HORIZONTAL)
         self.voltagesizer.Add(self.pumpsizer, 1,wx.ALL|wx.CENTER,5)
@@ -152,114 +153,70 @@ class MainWindow(wx.Frame):
         st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
         return st
 
-    #function to set pump voltage
-    def SetVoltage(self, e):
-        obj=e.GetEventObject() #gets the particular button that was pressed
-        if obj==self.he4icsetvolt:
-            if  float(self.he4IC_voltage_scroll.GetValue().strip())>=-25 and float(self.he4IC_voltage_scroll.GetValue().strip())<=0: #checks if voltages are in range
-                voltages.ser3.write('APPL N25V, '+str(self.he4IC_voltage_scroll.GetValue().strip())+ ' \r\n') #sends inputted voltage to Aligent
-                self.logBox.AppendText(self.Gettime() +' 4He IC Pump has been changed to '+str(self.he4IC_voltage_scroll.GetValue().strip())+'V \r')
-            else:
-                self.logBox.AppendText(self.Gettime() +' Set 4He IC Pump voltage is out of range \r')
-                self.ErrorMessage()
+    def he4icsetvolt_action(self, event):
+        powersupply.set_voltage('4He pump', float(self.he4IC_voltage_scroll.GetValue().strip()))
+    def he3icsetvolt_action(self, event):
+        powersupply.set_voltage('IC pump', float(self.he4IC_voltage_scroll.GetValue().strip()))
+    def he3ucsetvolt_action(self, event):
+        powersupply.set_voltage('UC pump', float(self.he4IC_voltage_scroll.GetValue().strip()))
 
-        if obj==self.he3icsetvolt:
-            if float(self.he3IC_voltage_scroll.GetValue().strip())>=0 and float(self.he3IC_voltage_scroll.GetValue().strip())<=25:
-                voltages.ser3.write('APPL P25V, '+str(self.he3IC_voltage_scroll.GetValue().strip())+ ' \r\n')
-                self.logBox.AppendText(self.Gettime() +' 3He IC Pump has been changed to '+str(self.he3IC_voltage_scroll.GetValue().strip())+ 'V \r')
-            else:
-                self.logBox.AppendText(self.Gettime() +' Set 3He IC Pump voltage is out of range \r')
-                self.ErrorMessage()
+    def switch_action(self, event, switchname):
+        obj = event.GetEventObject()
+        if obj.GetValue(): #if the button is pressed, the switch turns on
+            powersupply.set_voltage(switchname, 5.0)
+            self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned ON \r')
+        else: #if the button is not pressed, then the switch turns off
+            powersupply.set_voltage(switchname, 0.0)
+            self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned OFF \r')
+    def he4icsetvolt_action(self, event):
+        return switch_action(self, event, '4He switch')
+    def he3icsetvolt_action(self, event):
+        return switch_action(self, event, 'IC switch')
+    def he3ucswitch_action(self, event):
+        return switch_action(self, event, 'UC switch')
 
-        if obj==self.he3ucsetvolt:
-            if float(self.he3UC_voltage_scroll.GetValue().strip())>=-25 and float(self.he3UC_voltage_scroll.GetValue().strip())<=0:
-                voltages.ser2.write('APPL N25V, '+str(self.he3UC_voltage_scroll.GetValue().strip())+ ' \r\n')
-                self.logBox.AppendText(self.Gettime()+' 3He UC Pump has been changed to '+str(self.he3UC_voltage_scroll.GetValue().strip())+ 'V \r')
-            else:
-                self.logBox.AppendText(self.Gettime() +' Set 3He IUC Pump voltage is out of range \r')
-                self.ErrorMessage()
-
-    #function to toggle the switches
-    def OnToggleSwitch(self, e):
-        obj=e.GetEventObject() #gets the particular button that was pressed
-        isPressed=obj.GetValue() #checks to see if the button is in the pressed or unpressed state
-#        self.logBox.AppendText('asdfh \n')
-        if obj==self.he4IC_switch_button:
-            if isPressed: #if the button is pressed, the switch turns on
-                voltages.ser3.write('APPL P6V, 5 \r\n')
-                self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned ON \r')
-#                sleeptime.sleep(1)
-            else: #if the button is not pressed, then the switch turns off
-                voltages.ser3.write('APPL P6V, 0 \r\n')
-                self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned OFF \r')
-#                sleeptime.sleep(1)
-        if obj==self.he3IC_switch_button:
-            if isPressed:
-                voltages.ser2.write('APPL P25V, 5 \r\n')
-                self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned ON \r')
-#                sleeptime.sleep(1)
-            else:
-                voltages.ser2.write('APPL P25V, 0 \r\n')
-                self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned OFF \r')
-#                sleeptime.sleep(1)
-        if obj==self.he3UC_switch_button:
-            if isPressed:
-                voltages.ser2.write('APPL P6V, 5 \r\n')
-                self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned ON \r')
-#                sleeptime.sleep(1)
-            else:
-                voltages.ser2.write('APPL P6V, 0 \r\n')
-                self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned OFF \r')
-#                sleeptime.sleep(1)
-
-    #function that gets voltages
-    def GetVoltages(self, e):
-        currentvolts = voltages.getvoltages() #grabs voltages using the function defined in voltages.py
-        self.he4icpumpvolt.SetLabel('4He IC Pump: '+ str(currentvolts[0]))
-        self.he3icpumpvolt.SetLabel('3He IC Pump: '+ str(currentvolts[1]))
-        self.he3ucpumpvolt.SetLabel('3He UC Pump: '+ str(currentvolts[2]))
-
-        self.he4icswitchvolt.SetLabel('4He IC Switch: '+ str(currentvolts[3]))
-        self.he3icswitchvolt.SetLabel('3He IC Switch: '+ str(currentvolts[4]))
-        self.he3ucswitchvolt.SetLabel('3He UC Switch: '+ str(currentvolts[5]))
+    def voltagebutton_action(self, event):
+        for name in powersupply.heaternames:
+            current_voltage = powersupply.read_voltage(name)
+            self.heatervoltagetext[name].SetLabel('%s: %.2f' % (name, current_voltage))
 
     def ErrorMessage(self):
-        wx.MessageBox('Inputted Voltage is out of range \r Voltage remains unchanged', 'Error', wx.OK | wx.ICON_ERROR)
+        wx.MessageBox('Inputed voltage is out of range \r voltage remains unchanged', 'Error', wx.OK | wx.ICON_ERROR)
 
-    def checkcycle(self,e):
-        # check that a valid data file has been entered
-        if os.path.isfile(self.dataFileBox.GetValue()) == False:
-            wx.MessageBox('Please enter a valid fridge data file!', 'Error', wx.OK | wx.ICON_ERROR)
-            return
-        print self.dataFileBox.GetValue()
+    def startcycle_action(self, event):
+        if self.cyclerunning == False:
+            # check that a valid data file has been entered
+            if os.path.isfile(self.dataFileBox.GetValue()) == False:
+                wx.MessageBox('Please enter a valid fridge data file!', 'Error', wx.OK | wx.ICON_ERROR)
+                return
 
-        if self.canstartcycle:
-            self.logBox.AppendText('Starting Automatic Fridge Cycle \n')
-            self.canstartcycle=0
-            # t = threading.Thread(name='autocycle', target=self.autocycle, args=[self.dataFileBox.GetValue()])
-            self.autocycle(self.dataFileBox.GetValue())
-            # t.start()
+            print self.dataFileBox.GetValue()
+
+            self.abortcycle.clear()
+
+        # if self.autocyclePID != None:
+        #     self.logBox.AppendText('Starting Automatic Fridge Cycle \n')
+        #     autocycleproc = multiprocessing.Process(target=autocycler.run(), args=(self.dataFileBox.GetValue(), self.autocyclemessenger))
+        #     autocycleproc.start()
+        #     # t = threading.Thread(name='autocycle', target=self.autocycle, args=[self.dataFileBox.GetValue()])
+        #     self.autocycle(self.dataFileBox.GetValue())
+            self.cyclerunning = True
         else:
-            self.logBox.AppendText('Automatic Fridge Cycle is already running \n')
+            self.logBox.AppendText('Fridge cycle is already running, ignoring request to start. \n')
 
-    def stopcycle(self, e):
-        if self.canstartcycle==0:
-            self.logBox.AppendText('Trying to stop Automatic Fridge Cycle \n')
-            self.abortcycle = 1
-            self.canstartcycle = 1
+    def stopcycle_action(self):
+        if self.cyclerunning == True:
+            self.abortcycle.set()
         else:
-            self.logBox.AppendText('Automatic Fridge Cycle is Currently not running \n')
+            self.logBox.AppendText('Fridge cycle not running, ignoring request to stop. \n')
 
-    def OnAbout(self,e):
-        # Create a message dialog box
-        dlg = wx.MessageDialog(self, " A sample editor \n in wxPython", "About Sample Editor", wx.OK)
-        dlg.ShowModal() # Shows it
-        dlg.Destroy() # finally destroy it when finished.
+    def logging_action(self, event):
+        self.logBox.AppendText('%s\n' % event.message)
 
-    def OnExit(self,e):
+    def OnExit(self, event):
         self.Close(True)  # Close the frame.
 
-    def OnOpen(self,e):
+    def OnOpen(self, event):
         """ Open a file"""
         dlg = wx.FileDialog(self, "Choose a file", "", "", "*.*", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
