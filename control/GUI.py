@@ -60,11 +60,11 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_TOGGLEBUTTON, self.he3ucsetvolt_action, self.he3UCswitch_button)
 
         # button to get current voltages
-        self.voltagebutton = wx.Button(self, -1, label="Current Voltages", size=(125,50))
+        self.voltagebutton = wx.Button(self, -1, label="Get Voltages", size=(100,40))
         self.Bind(wx.EVT_BUTTON, self.voltagebutton_action, self.voltagebutton)
 
         # pump/switch heater voltages
-        self.heatervoltagetext = {name: wx.StaticText(self, label=name) for name in powersupply.heaternames}
+        self.heatervoltagetext = [wx.StaticText(self, label=name) for name in powersupply.heaternames]
 
         self.autocyclestart = wx.Button(self,-1,label="Start")
         self.autocyclestop = wx.Button(self, -1, label="Stop")
@@ -100,18 +100,17 @@ class MainWindow(wx.Frame):
 
         self.pumpsizer = wx.BoxSizer(wx.VERTICAL)
         for text in self.heatervoltagetext:
-            if 'pump' in self.heatervoltagetext[text].Label:
-                self.pumpsizer.Add(self.heatervoltagetext[text], 1, wx.ALL|wx.CENTER, 10)
+            if 'pump' in text.Label:
+                self.pumpsizer.Add(text, 1, wx.ALL|wx.CENTER, 10)
 
         self.switchsizer = wx.BoxSizer(wx.VERTICAL)
         for text in self.heatervoltagetext:
-            if 'switch' in self.heatervoltagetext[text].Label:
-                self.switchsizer.Add(self.heatervoltagetext[text], 1, wx.ALL|wx.CENTER, 10)
+            if 'switch' in text.Label:
+                self.switchsizer.Add(text, 1, wx.ALL|wx.CENTER, 10)
 
         self.voltagesizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.voltagesizer.Add(self.pumpsizer, 1,wx.ALL|wx.CENTER,5)
-        self.voltagesizer.Add(self.switchsizer, 1, wx.ALL|wx.CENTER,5)
-        self.voltagesizer.Add(self.voltagebutton, 1, wx.ALL|wx.CENTER,5)
+        self.voltagesizer.Add(self.pumpsizer, 1,wx.ALL)
+        self.voltagesizer.Add(self.switchsizer, 1, wx.ALL)
 
         self.autocyclesizer = wx.BoxSizer(wx.HORIZONTAL)
         self.autocyclesizer.Add(self.autocyclestart,1,wx.ALL|wx.CENTER)
@@ -133,8 +132,9 @@ class MainWindow(wx.Frame):
         self.master_sizer.Add(wx.StaticText(self,label='Turn the Switches On/Off'),0,wx.CENTER|wx.ALL|wx.EXPAND,10)
         self.master_sizer.Add(self.setswitchsizer,0,wx.CENTER)
         self.master_sizer.Add(wx.StaticLine(self),0,wx.ALL|wx.CENTER|wx.EXPAND,10)
-        self.master_sizer.Add(wx.StaticText(self, label='Check Current Voltages'),0,wx.CENTER|wx.ALL|wx.EXPAND,10)
-        self.master_sizer.Add(self.voltagesizer, 0, wx.ALL)
+        self.master_sizer.Add(wx.StaticText(self, label='Current Voltages'),0,wx.CENTER|wx.ALL|wx.EXPAND,10)
+        self.master_sizer.Add(self.voltagesizer, 0, wx.ALL|wx.EXPAND)
+        self.master_sizer.Add(self.voltagebutton, 0, wx.ALL|wx.CENTER)
         self.master_sizer.Add(wx.StaticLine(self),0,wx.ALL|wx.CENTER|wx.EXPAND,10)
         self.master_sizer.Add(wx.StaticText(self,label='Start/Stop the Automatic Fridge Cycle'),0,wx.CENTER|wx.ALL|wx.EXPAND,10)
         self.master_sizer.Add(self.autocyclesizer,0,wx.CENTER)
@@ -153,11 +153,11 @@ class MainWindow(wx.Frame):
         return st
 
     def he4icsetvolt_action(self, event):
-        powersupply.set_voltage('4He pump', float(self.he4IC_voltage_scroll.GetValue().strip()))
+        powersupply.set_voltage('4He IC pump', float(self.he4IC_voltage_scroll.GetValue().strip()))
     def he3icsetvolt_action(self, event):
-        powersupply.set_voltage('IC pump', float(self.he3IC_voltage_scroll.GetValue().strip()))
+        powersupply.set_voltage('3He IC pump', float(self.he3IC_voltage_scroll.GetValue().strip()))
     def he3ucsetvolt_action(self, event):
-        powersupply.set_voltage('UC pump', float(self.he3UC_voltage_scroll.GetValue().strip()))
+        powersupply.set_voltage('3He UC pump', float(self.he3UC_voltage_scroll.GetValue().strip()))
 
     def switch_action(self, event, switchname):
         obj = event.GetEventObject()
@@ -177,7 +177,9 @@ class MainWindow(wx.Frame):
     def voltagebutton_action(self, event):
         for name in powersupply.heaternames:
             current_voltage = powersupply.read_voltage(name)
-            self.heatervoltagetext[name].SetLabel('%s: %.2f' % (name, current_voltage))
+            for text in self.heatervoltagetext:
+                if name in text.Label:
+                    text.SetLabel('%s: %.2f' % (name, current_voltage))
 
     def ErrorMessage(self):
         wx.MessageBox('Inputed voltage is out of range \r voltage remains unchanged', 'Error', wx.OK | wx.ICON_ERROR)

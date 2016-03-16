@@ -64,6 +64,7 @@ def set_voltage(heater, voltage):
     None
     '''
     command = '%s %.2f %s' % (write_cmd[heater], voltage, termination_str)
+    print command
     serial_interface[heater].write(command)
 
 
@@ -81,7 +82,7 @@ def read_voltage(heater):
     -------
     None
     '''
-    command = '%s %.2f %s' % (read_cmd[heater], voltage, termination_str)
+    command = '%s %s' % (read_cmd[heater], termination_str)
     serial_interface[heater].write(command)
     voltage = float(serial_interface[heater].readline())
 
