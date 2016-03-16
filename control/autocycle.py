@@ -16,10 +16,6 @@
 # of pseudo-non-blocking.
 
 import time
-import serial
-import datetime
-import re
-from datetime import datetime, date, time
 import gettemp
 import getslope
 import wx

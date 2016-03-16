@@ -1,8 +1,6 @@
-import time as sleeptime
 import wx
 import wx.lib.newevent
 import os
-import voltages
 import time
 import datetime
 import threading
