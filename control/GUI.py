@@ -55,9 +55,9 @@ class MainWindow(wx.Frame):
         self.he3ICswitch_button = wx.ToggleButton(self, -1, label="3He IC switch", size=(120,50))
         self.he3UCswitch_button = wx.ToggleButton(self, -1, label="3He UC switch", size=(120,50))
         # binds switches buttons to function
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.he4icsetvolt_action, self.he4ICswitch_button)
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3icsetvolt_action, self.he3ICswitch_button)
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3ucsetvolt_action, self.he3UCswitch_button)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he4icswitch_action, self.he4ICswitch_button)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3icswitch_action, self.he3ICswitch_button)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.he3ucswitch_action, self.he3UCswitch_button)
 
         # button to get current voltages
         self.voltagebutton = wx.Button(self, -1, label="Get Voltages", size=(100,40))
@@ -168,11 +168,11 @@ class MainWindow(wx.Frame):
             powersupply.set_voltage(switchname, 0.0)
             self.logBox.AppendText(self.Gettime() +' '+ obj.GetLabelText() + ' has been turned OFF \r')
     def he4icswitch_action(self, event):
-        return switch_action(self, event, 'He4 IC switch')
+        self.switch_action(event, '4He IC switch')
     def he3icswitch_action(self, event):
-        return switch_action(self, event, 'He3 IC switch')
+        self.switch_action(event, '3He IC switch')
     def he3ucswitch_action(self, event):
-        return switch_action(self, event, 'He3 UC switch')
+        self.switch_action(event, '3He UC switch')
 
     def voltagebutton_action(self, event):
         for name in powersupply.heaternames:
@@ -190,24 +190,19 @@ class MainWindow(wx.Frame):
             if os.path.isfile(self.dataFileBox.GetValue()) == False:
                 wx.MessageBox('Please enter a valid fridge data file!', 'Error', wx.OK | wx.ICON_ERROR)
                 return
-
-            print self.dataFileBox.GetValue()
-
+            else:
+                h5filename = self.dataFileBox.GetValue()
+                cyclethread = threading.Thread(name='autocycle', target=autocycle.run, args=(h5filename, self, LoggingEvent, self.abortcycle))
+                cyclethread.start()
             self.abortcycle.clear()
-
-        # if self.autocyclePID != None:
-        #     self.logBox.AppendText('Starting Automatic Fridge Cycle \n')
-        #     autocycleproc = multiprocessing.Process(target=autocycler.run(), args=(self.dataFileBox.GetValue(), self.autocyclemessenger))
-        #     autocycleproc.start()
-        #     # t = threading.Thread(name='autocycle', target=self.autocycle, args=[self.dataFileBox.GetValue()])
-        #     self.autocycle(self.dataFileBox.GetValue())
             self.cyclerunning = True
         else:
             self.logBox.AppendText('Fridge cycle is already running, ignoring request to start. \n')
 
-    def stopcycle_action(self):
+    def stopcycle_action(self, event):
         if self.cyclerunning == True:
             self.abortcycle.set()
+            self.cyclerunning = False
         else:
             self.logBox.AppendText('Fridge cycle not running, ignoring request to stop. \n')
 

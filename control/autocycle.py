@@ -22,7 +22,7 @@ import wx
 import powersupply
 
 
-def waitforkill(self, waittime, killevent):
+def waitforkill(waittime, killevent):
     '''
     Waits for waittime and return True if kill flag is set, False otherwise.
     '''
@@ -37,40 +37,40 @@ def waitforkill(self, waittime, killevent):
 def run(datafile_name, parent, messageevent, killevent):
     # turn off all pumps and switches
     for name in powersupply.heaternames:
-        set_voltage(name, 0.0)
+        powersupply.set_voltage(name, 0.0)
         wx.PostEvent(parent, messageevent(message=('Setting %s to 0V.' % name)))
 
     while gettemp.gettemp(datafile_name, 'He4 IC Switch') < 8 and \
           gettemp.gettemp(datafile_name, 'He3 IC Switch') < 13 and \
           gettemp.gettemp(datafile_name, 'He3 UC Switch') < 8:
-        if self.waitforkill(1, killevent): return
+        if waitforkill(1, killevent): return
 
     #Heat 4HE IC pump first, then do other He3 pumps next
     wx.PostEvent(parent, messageevent(message='Turning on 4He IC Pump to -25 V.'))
     powersupply.set_voltage('4He IC pump', -25)
-    if self.waitforkill(2, killevent): return
+    if waitforkill(2, killevent): return
 
     while gettemp.gettemp(datafile_name, 'He4 IC Pump') > 33:
-        if self.waitforkill(2, killevent): return
+        if waitforkill(2, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Lowering 4He IC Pump voltage to -4.5V.'))
-    powersupply.set_voltage('4He IC pump', -25)
+    powersupply.set_voltage('4He IC pump', -4.5)
 
     #Heat 3He pumps
     wx.PostEvent(parent, messageevent(message='Turning on 3He IC Pump to +25 V.'))
     powersupply.set_voltage('3He IC pump', 25)
-    if self.waitforkill(2, killevent): return
+    if waitforkill(2, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Turning on 3He UC Pump to +25 V.'))
     powersupply.set_voltage('3He UC pump', -25)
-    if self.waitforkill(2, killevent): return
+    if waitforkill(2, killevent): return
 
     isHe4ICHigh, isHe3ICHigh, isHe3UCHigh = True, True, True
     while gettemp.gettemp(datafile_name, 'He4 IC Switch') > 8 or \
           gettemp.gettemp(datafile_name, 'He3 IC Switch') > 8 or \
           gettemp.gettemp(datafile_name, 'He3 UC Switch') > 8 or \
           isHe4ICHigh or isHe3ICHigh or isHe3UCHigh:
-        if self.waitforkill(2, killevent): return
+        if waitforkill(2, killevent): return
 
         if gettemp.gettemp(datafile_name, 'He4 IC Pump') > 33:
             wx.PostEvent(parent, messageevent(message='Lowering 4He IC Pump voltage to -4.5V.'))
@@ -91,10 +91,10 @@ def run(datafile_name, parent, messageevent, killevent):
 
     #Checks to see if Mainplate has settled by checking the last 10 slopes in the datafile.
     #wait 10 minutes before checking
-    if self.waitforkill(600, killevent): return
+    if waitforkill(600, killevent): return
 
     while getslope.getslope(datafile_name, 'mainplate', 60) > 0.001:
-        if self.waitforkill(10, killevent): return
+        if waitforkill(10, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Mainplate has settled'))
     wx.PostEvent(parent, messageevent(message='Turning off 4He IC pump and turning on switch'))
@@ -106,10 +106,10 @@ def run(datafile_name, parent, messageevent, killevent):
     # This loop gets the 5 slopes corresponding to the last five lines in the data file
     # If all the 5 slopes are greater than a particular value, we take that as the HEX increasing
     #wait 10 minutes before checking
-    if self.waitforkill(600, killevent): return
+    if waitforkill(600, killevent): return
 
     while getslope.getslope(datafile_name, 'HEX', 60) < 0.003:
-        if self.waitforkill(10, killevent): return
+        if waitforkill(10, killevent): return
 
     wx.PostEvent(parent, messageevent(message='HEX has started increasing'))
     wx.PostEvent(parent, messageevent(message='Now turning off 3He IC Pump and turning on switch'))
@@ -121,13 +121,13 @@ def run(datafile_name, parent, messageevent, killevent):
     #This loop gets the last 10 slope corresponding to the last ten lines in the data file
     #If all ten slopes for the HEX and mainplate are less than a certain distance from 0, we take that as them being constant.
     while abs(getslope.getslope(datafile_name, 'mainplate', 60)) > 0.001:
-        if self.waitforkill(10, killevent): return
+        if waitforkill(10, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Now turning off 3He UC Pump and turning on switch'))
     powersupply.set_voltage('3He UC pump', 0)
     powersupply.set_voltage('3He UC switch', 5)
 
-    self.logBox.AppendText( 'Cycle is complete \n ')
+    wx.PostEvent(parent, messageevent(message='Cycle is complete'))
 
 
 if __name__ == '__main__':
