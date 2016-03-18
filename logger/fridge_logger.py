@@ -162,7 +162,7 @@ try:
 
         # update the plots
         plotter.update_plot(tables_list, plot_list)
-        plotter.write_table('figures/datatable.html', tables_list, plot_list)
+        plotter.write_table('datatable.html', tables_list, plot_list)
 
         # make a copy of the data file; useful for other processes that need
         # access to the latest data since we cannot do simultaneous read/write
