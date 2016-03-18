@@ -33,13 +33,14 @@ def write_table(outfilename, tables_list, plot_list):
     (None)
     '''
     outfile = file(outfilename, 'w')
-    outfile.write('<table>\n')
+    outfile.write('<table border=1 width=500>\n')
+    outfile.write('<tr><td><b>Sensor</b></td><td><b>Value</b></td></tr>\n')
     for jplot in range(len(plot_list)):
         # write one line in table for each thermometer
         for var in plot_list[jplot][0]:
             maxtime = [row['time'] for row in tables_list[var].iterrows(start=tables_list[var].nrows-1, stop=tables_list[var].nrows)]
-            currentvalue = [x['time'] for x in tables_list[var].iterrows() if x['time']==maxtime[0]][0]
-            outfile.write('<tr>\n<td>\n%s\n</td>\n<td>\n%.2f\n</td>\n</tr>\n' % (var, currentvalue)) # TODO: need to make distinction between Ohm and K here
+            currentvalue = [x[var] for x in tables_list[var].iterrows() if x['time']==maxtime[0]][0]
+            outfile.write('<tr>\n<td>\n%s\n</td>\n<td>\n%.3f\n</td>\n</tr>\n' % (var, currentvalue)) # TODO: need to make distinction between Ohm and K here
     outfile.write('</table>')
     outfile.close()
 

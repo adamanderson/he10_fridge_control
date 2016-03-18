@@ -27,8 +27,8 @@ channel_map = {'/dev/ttyr00':   ['HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump
                                  'He3 UC Pump', 'He4 IC Switch', 'He3 IC Switch',  'He3 UC Switch'],
                '/dev/ttyr01':   ['PTC 4K stage', 'PTC 50K stage', 'channel 2', 'channel 3',
                                  'wiring harness', '4K shield near harness', 'SQUID 5',  'SQUID 7'],
-               '192.168.0.12':  ['UC Head', 'IC Head', 'LC shield', 'wafer holder'],
-               '192.168.2.5':   ['backplate', '3G IC head', '3G UC head', '3G 4He head']}
+               '192.168.0.12':  ['UC Head', 'IC Head', 'UC stage', 'LC shield'],
+               '192.168.2.5':   ['wafer holder', '3G IC head', '3G UC head', '3G 4He head']}
 
 # Specify the variables to be plotted in each subplot of the display. This
 # should be a list of lists of (1 or 2) lists of strings, where each outer list contains the variables
@@ -39,7 +39,7 @@ channel_map = {'/dev/ttyr00':   ['HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump
 plot_list = [[['He4 IC Pump', 'He3 IC Pump', 'He3 UC Pump'], ['He4 IC Switch', 'He3 IC Switch', 'He3 UC Switch']],
              [['HEX', 'mainplate']],
              [['PTC 4K stage'], ['PTC 50K stage']],
-             [['UC Head', 'IC Head', 'LC shield', 'wafer holder', 'backplate']],
+             [['UC Head', 'IC Head', 'wafer holder', 'UC stage']]
              [['wiring harness', '4K shield near harness', 'SQUID 5', 'SQUID 7']],
              [['3G 4He head', '3G UC head'], ['3G IC head']]]
 

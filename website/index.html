@@ -13,9 +13,6 @@
 <meta http-equiv="refresh" content="10">
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script> 
-<script>
-  $(".data").load("helloworld.txt");
-</script> 
 
 </head>
 
@@ -29,6 +26,7 @@
 <div id="nav">
   <ul>
     <li><a href="index.html" class="topnav, currentnav">latest data</a></li>
+    <li><a href="plots.html">plots</a></li>
     <li><a href="about.html">about</a></li>
   </ul>
 </div>
@@ -39,18 +37,13 @@
   <div id="pageheader">Latest Data</div>
   <br>
   <center>
-    <!--<img src="img/r00.png" width=600>
-    <br>
-    <img src="img/r01.png" width=600>
-    <br>
-    <img src="img/eth2.png" width=600>-->
-    <img src="img/temperature_plot.png" width=600>
-
-    <br>
-
     <link rel="import" href="datatable.html">
-    blah, blah, blah
+
     <div id="text"></div>
+    <script>
+      $("#text").load("datatable.html");
+    </script> 
+
   </center>
 </div>
 
