@@ -1,4 +1,4 @@
-# summary_plotter.py
+# plotter.py
 #
 # A modification of Alex Diaz's "testplots.py" to make a simple summary plot of
 # all temperatures in the fridge, but reading data from the PyTables database
@@ -13,6 +13,36 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime
 import numpy as np
+
+
+def write_table(outfilename, tables_list, plot_list):
+    '''
+    Writes a file containing an html table with the latest data.
+
+    Parameters:
+    -----------
+    outfilename : string
+        Name of html file in which to write table.
+    tables_list : dict
+        Dictionary of PyTables tables from which to take data
+    plot_list : list
+        List of lists of string indicating variables from which to take data.
+
+    Returns:
+    --------
+    (None)
+    '''
+    outfile = file(outfilename, 'w')
+    outfile.write('<table>\n')
+    for jplot in range(len(plot_list)):
+        # write one line in table for each thermometer
+        for var in plot_list[jplot][0]:
+            maxtime = [row['time'] for row in tables_list[var].iterrows(start=tables_list[var].nrows-1, stop=tables_list[var].nrows)]
+            currentvalue = [x['time'] for x in tables_list[var].iterrows() if x['time']==maxtime[0]]
+            outfile.write('<tr>\n<td>\n%s\n</td>\n<td>\n%.2f\n</td>\n</tr>\n') # TODO: need to make distinction between Ohm and K here
+    outfile.write('</table>')
+    outfile.close()
+
 
 def update_plot(tables_list, plot_list):
     '''
