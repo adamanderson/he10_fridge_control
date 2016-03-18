@@ -15,6 +15,10 @@
 # communicating with the GUI, so that the GUI is now truly non-blocking instead
 # of pseudo-non-blocking.
 
+# TODO: At various points we compute slopes to see if various temperatures have
+# "settled". These are computed over the last N points, but instead should be
+# computed over a fixed time interval because the logging interval can change [AJA]
+
 import time
 import gettemp
 import getslope
@@ -28,7 +32,7 @@ def waitforkill(waittime, killevent):
     '''
     nSteps = int(waittime / 0.1)
     for jStep in range(nSteps):
-        time.sleep(0.01) # our simulated calculation time
+        time.sleep(0.1) # our simulated calculation time
         if killevent.is_set() == True:
             return True
     return False
@@ -40,9 +44,10 @@ def run(datafile_name, parent, messageevent, killevent):
         powersupply.set_voltage(name, 0.0)
         wx.PostEvent(parent, messageevent(message=('Setting %s to 0V.' % name)))
 
-    while gettemp.gettemp(datafile_name, 'He4 IC Switch') < 8 and \
-          gettemp.gettemp(datafile_name, 'He3 IC Switch') < 13 and \
-          gettemp.gettemp(datafile_name, 'He3 UC Switch') < 8:
+    wx.PostEvent(parent, messageevent(message='Waiting for switches to cool.'))
+    while gettemp.gettemp(datafile_name, 'He4 IC Switch') > 8 and \
+          gettemp.gettemp(datafile_name, 'He3 IC Switch') > 13 and \
+          gettemp.gettemp(datafile_name, 'He3 UC Switch') > 8:
         if waitforkill(1, killevent): return
 
     #Heat 4HE IC pump first, then do other He3 pumps next
@@ -50,6 +55,7 @@ def run(datafile_name, parent, messageevent, killevent):
     powersupply.set_voltage('4He IC pump', -25)
     if waitforkill(2, killevent): return
 
+    wx.PostEvent(parent, messageevent(message='Waiting for 4He IC Pump to reach 33K.'))
     while gettemp.gettemp(datafile_name, 'He4 IC Pump') > 33:
         if waitforkill(2, killevent): return
 
@@ -65,26 +71,25 @@ def run(datafile_name, parent, messageevent, killevent):
     powersupply.set_voltage('3He UC pump', -25)
     if waitforkill(2, killevent): return
 
-    isHe4ICHigh, isHe3ICHigh, isHe3UCHigh = True, True, True
+    wx.PostEvent(parent, messageevent(message='Waiting for all switches to be <8K, and 3He pumps to be >47K'))
+    isHe3ICHigh, isHe3UCHigh = True, True
     while gettemp.gettemp(datafile_name, 'He4 IC Switch') > 8 or \
           gettemp.gettemp(datafile_name, 'He3 IC Switch') > 8 or \
           gettemp.gettemp(datafile_name, 'He3 UC Switch') > 8 or \
-          isHe4ICHigh or isHe3ICHigh or isHe3UCHigh:
+          isHe3ICHigh or isHe3UCHigh:
         if waitforkill(2, killevent): return
-
-        if gettemp.gettemp(datafile_name, 'He4 IC Pump') > 33:
-            wx.PostEvent(parent, messageevent(message='Lowering 4He IC Pump voltage to -4.5V.'))
-            powersupply.set_voltage('4He IC pump', -4.5)
-            isHe4ICHigh = False
-
-        if gettemp.gettemp(datafile_name, 'He3 IC Pump')> 47:
-            wx.PostEvent(parent, messageevent(message='Lowering 4He IC Pump voltage to -4.5V.'))
-            powersupply.set_voltage('3He IC pump', -4.55)
+        
+        # TODO: Don't hardcode in thermometer names, lookup from logger python modules (AJA)
+        if gettemp.gettemp(datafile_name, 'He3 IC Pump')> 47 and isHe3ICHigh==True:
+            wx.PostEvent(parent, messageevent(message='Lowering 3He IC Pump voltage to 4.55V.'))
+            powersupply.set_voltage('3He IC pump', 4.55)
+            if waitforkill(2, killevent): return
             isHe3ICHigh = False
 
-        if gettemp.gettemp(datafile_name, 'He3 UC Pump') > 47:
+        if gettemp.gettemp(datafile_name, 'He3 UC Pump') > 47 and isHe3UCHigh==True:
             wx.PostEvent(parent, messageevent(message='Lowering 3He UC Pump voltage to -6.72V.'))
             powersupply.set_voltage('3He UC pump', -6.72)
+            if waitforkill(2, killevent): return
             isHe3UCHigh = False
 
     wx.PostEvent(parent, messageevent(message='Waiting for mainplate to settle'))
@@ -127,10 +132,13 @@ def run(datafile_name, parent, messageevent, killevent):
     powersupply.set_voltage('3He UC pump', 0)
     powersupply.set_voltage('3He UC switch', 5)
 
+    if waitforkill(600, killevent): return
+
     wx.PostEvent(parent, messageevent(message='Cycle is complete'))
 
 
 if __name__ == '__main__':
+    # TODO: Add this [AJA]
     # when running as a standalone script, redirect messageevents to the
     # terminal via a dummy parent object
     print 'Starting autocycle...'
