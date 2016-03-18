@@ -39,7 +39,7 @@ channel_map = {'/dev/ttyr00':   ['HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump
 plot_list = [[['He4 IC Pump', 'He3 IC Pump', 'He3 UC Pump'], ['He4 IC Switch', 'He3 IC Switch', 'He3 UC Switch']],
              [['HEX', 'mainplate']],
              [['PTC 4K stage'], ['PTC 50K stage']],
-             [['UC Head', 'IC Head', 'wafer holder', 'UC stage']]
+             [['UC Head', 'IC Head', 'wafer holder', 'UC stage']],
              [['wiring harness', '4K shield near harness', 'SQUID 5', 'SQUID 7']],
              [['3G 4He head', '3G UC head'], ['3G IC head']]]
 
@@ -123,9 +123,6 @@ try:
         # read the responses for serial interfaces
         for interface_name in serial_interfaces:
             raw_output = serial_interfaces[interface_name].read(serial_interfaces[interface_name].inWaiting())
-
-            print interface_name
-            print raw_output
 
             # check that we actually got a response with data in it (occasionally the MOXA
             # is non-responsive), otherwise do nothing
