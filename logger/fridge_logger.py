@@ -118,7 +118,7 @@ try:
         current_time = time.time()
 
         # wait for devices to issue a response
-        time.sleep(0.2)
+        time.sleep(0.1)
 
         # read the responses for serial interfaces
         for interface_name in serial_interfaces:
@@ -142,7 +142,7 @@ try:
             raw_output_temp[interface_address], _ = tcp_interfaces[interface_address].recvfrom(2048)
         for interface_address in tcp_interfaces:
             tcp_interfaces[interface_address].sendto('SRDG? 0\r\n', (interface_address, 7777))
-        time.sleep(0.2)
+        time.sleep(0.1)
         for interface_address in tcp_interfaces:
             raw_output_resist[interface_address], _ = tcp_interfaces[interface_address].recvfrom(2048)
         for interface_address in tcp_interfaces:
