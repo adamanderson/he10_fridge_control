@@ -45,8 +45,8 @@ def run(datafile_name, parent, messageevent, killevent):
         wx.PostEvent(parent, messageevent(message=('Setting %s to 0V.' % name)))
 
     wx.PostEvent(parent, messageevent(message='Waiting for switches to cool.'))
-    while gettemp.gettemp(datafile_name, 'He4 IC Switch') > 8 and \
-          gettemp.gettemp(datafile_name, 'He3 IC Switch') > 13 and \
+    while gettemp.gettemp(datafile_name, 'He4 IC Switch') > 8 or \
+          gettemp.gettemp(datafile_name, 'He3 IC Switch') > 13 or \
           gettemp.gettemp(datafile_name, 'He3 UC Switch') > 8:
         if waitforkill(1, killevent): return
 
@@ -56,7 +56,7 @@ def run(datafile_name, parent, messageevent, killevent):
     if waitforkill(2, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Waiting for 4He IC Pump to reach 33K.'))
-    while gettemp.gettemp(datafile_name, 'He4 IC Pump') > 33:
+    while gettemp.gettemp(datafile_name, 'He4 IC Pump') < 33:
         if waitforkill(2, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Lowering 4He IC Pump voltage to -4.5V.'))
@@ -107,12 +107,7 @@ def run(datafile_name, parent, messageevent, killevent):
     powersupply.set_voltage('4He IC switch', 5)
 
     wx.PostEvent(parent, messageevent(message='Waiting for heat exchanger to increase suddenly'))
-
-    # This loop gets the 5 slopes corresponding to the last five lines in the data file
-    # If all the 5 slopes are greater than a particular value, we take that as the HEX increasing
-    #wait 10 minutes before checking
     if waitforkill(600, killevent): return
-
     while getslope.getslope(datafile_name, 'HEX', 60) < 0.003:
         if waitforkill(10, killevent): return
 
@@ -122,9 +117,7 @@ def run(datafile_name, parent, messageevent, killevent):
     powersupply.set_voltage('3He IC switch', 5)
 
     wx.PostEvent(parent, messageevent(message='Waiting for heat exchanger and mainplate to settle'))
-
-    #This loop gets the last 10 slope corresponding to the last ten lines in the data file
-    #If all ten slopes for the HEX and mainplate are less than a certain distance from 0, we take that as them being constant.
+    if waitforkill(600, killevent): return
     while abs(getslope.getslope(datafile_name, 'mainplate', 60)) > 0.001:
         if waitforkill(10, killevent): return
 
