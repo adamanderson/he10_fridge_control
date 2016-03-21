@@ -98,7 +98,7 @@ def run(datafile_name, parent, messageevent, killevent):
     #wait 10 minutes before checking
     if waitforkill(600, killevent): return
 
-    while getslope.getslope(datafile_name, 'mainplate', 60) > 0.001:
+    while getslope.getslope(datafile_name, 'mainplate', 60) > 0.0005:
         if waitforkill(10, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Mainplate has settled'))
@@ -107,7 +107,7 @@ def run(datafile_name, parent, messageevent, killevent):
     powersupply.set_voltage('4He IC switch', 5)
 
     wx.PostEvent(parent, messageevent(message='Waiting for heat exchanger to increase suddenly'))
-    if waitforkill(600, killevent): return
+    if waitforkill(1200, killevent): return
     while getslope.getslope(datafile_name, 'HEX', 60) < 0.003:
         if waitforkill(10, killevent): return
 
