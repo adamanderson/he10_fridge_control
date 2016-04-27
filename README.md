@@ -5,6 +5,18 @@ This is the fridge control and readout software for the SPT3G test cryostat. It 
 * `logger/` - contains the python script that writes log files from temperature data (fridge_logger.py)
 * `website/` - files for the rudimentary website that displays the latest data
 
+# Setup and Dependencies
+Aside from the usual scientific Python stack, you will also need the pyserial package:
+```
+sudo apt-get install python-serial
+```
+
+The only other installation step is to add the enclosing directory of this package to your `PYTHONPATH`:
+```
+export PYTHONPATH=$PYTHONPATH:/path/to/enclosing/directory/
+```
+
+
 # Logging
 The script `fridge_logger.py` outputs data to a file whose name you specify at startup. This script writes the data to a pytables (hdf5) file and then produces a continuously-updated plot which is saved to the `website/` directory. The hdf5 files can be read with the usual pytables tools, the GUI app vitables, or some higher-level python interface functions in the `analysis/` directory. A duplicate file called `..._read.h5` is also produced so that other scripts, such as GUI.py, can simultaneously read the latest data without conflicting with write operations.
 

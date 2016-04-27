@@ -98,7 +98,7 @@ def run(datafile_name, parent, messageevent, killevent):
     #wait 10 minutes before checking
     if waitforkill(600, killevent): return
 
-    while getslope.getslope(datafile_name, 'mainplate', 60) > 0.0005:
+    while getslope.getslope(datafile_name, 'mainplate', 60) > 0.001:
         if waitforkill(10, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Mainplate has settled'))
