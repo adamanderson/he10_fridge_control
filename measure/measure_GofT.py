@@ -18,16 +18,16 @@ import numpy as np
 import cPickle as pickle
 
 # cryostat-specific settings
-setpoints = np.array([0.25, 0.275, 0.300, 0.325, 0.350, 0.375, 0.400, 0.425, 0.450, 0.475, 0.500])
+setpoints = np.linspace(0.275, 0.4, 14)
 PID_channel = 'UC Head'
 channel_of_interest = 'wafer holder'
 
 ChaseLS = LS.Lakeshore350('192.168.0.12',  ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
 WaferLS = LS.Lakeshore350('192.168.2.5',  ['wafer holder', '3G IC head', '3G UC head', '3G 4He head'])
-ChaseLS.config_output(1,1,WaferLS.channel_names.index(channel_of_interest))
+ChaseLS.config_output(1,1,ChaseLS.channel_names.index(PID_channel)+1)
 
 # setup pydfmux stuff
-hwm_file = '/home/spt3g/detector_testing/run11/hardware_maps/hwm_wafer69_SPTpol/fermilab_hwm_complete.yaml'
+hwm_file = '/home/spt3g/detector_testing/run12/hardware_maps/hwm_slots_457/fermilab_hwm_complete_1-10.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 ds = y['hardware_map'].query(pydfmux.Dfmux)
 d = ds[0]
@@ -56,7 +56,6 @@ for jtemp in range(len(setpoints)):
     while np.abs(recenttemps[-1] - recenttemps[-4]) > 0.001 and \
           nAttempts < 45:
         time.sleep(20)
-        print WaferLS.get_temps()
         recenttemps.append(WaferLS.get_temps()[channel_of_interest])
         nAttempts = nAttempts + 1
         print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
@@ -69,7 +68,7 @@ for jtemp in range(len(setpoints)):
     measurestarttimes[jtemp] = time.time()
     print waferstarttemps
 
-    drop_bolos_results = bolos.drop_bolos(A_STEP_SIZE=0.0003, fixed_stepsize=True, TOLERANCE=0.15)
+    drop_bolos_results = bolos.drop_bolos(A_STEP_SIZE=0.00002, target_amplitude=0.75, fixed_stepsize=False, TOLERANCE=0.1)
     overbias_results = bolos.overbias_and_null(carrier_amplitude = 0.015)
 
     waferstoptemps[jtemp] = WaferLS.get_temps()[channel_of_interest]
