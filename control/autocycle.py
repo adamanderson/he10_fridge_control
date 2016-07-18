@@ -128,6 +128,7 @@ def run(datafile_name, parent, messageevent, killevent):
     if waitforkill(600, killevent): return
 
     wx.PostEvent(parent, messageevent(message='Cycle is complete'))
+    killevent.set()
 
 
 if __name__ == '__main__':

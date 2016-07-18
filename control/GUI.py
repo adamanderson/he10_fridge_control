@@ -1,3 +1,15 @@
+# GUI.py
+#
+# Main control panel for a "He10" fridge. With the exception of the fridge cycle
+# code, this script is basic, standalone wxPython. Since the fridge cycle is a
+# long running process, it is handled as a separate thread and code is located
+# in the autocycle module. In order to keep the UI responsive and to update the
+# log during the cycle, the thread must be non-blocking, which is implemented
+# using threading events and wxPython events.
+#
+# Adam Anderson
+# adama@fnal.gov
+
 import wx
 import wx.lib.newevent
 import os
@@ -13,7 +25,7 @@ class MainWindow(wx.Frame):
     def __init__(self, parent, title):
         # event object which lets the user kill the autocycle
         self.abortcycle = threading.Event()
-        self.cyclerunning = False
+        self.abortcycle.set()
 
         # A "-1" in the size parameter instructs wxWidgets to use the default size.
         # In this case, we select 200px width and the default height.
@@ -77,7 +89,7 @@ class MainWindow(wx.Frame):
         self.file_sizer.Add(self.dataFileBox, 0, wx.ALL|wx.CENTER|wx.EXPAND)
         self.file_sizer.Add(self.dataFileButton, 0, wx.ALL|wx.CENTER)
 
-#       sizer for pump text box and button
+        # sizer for pump text box and button
         self.he4IC_sizer = wx.BoxSizer(wx.VERTICAL)
         self.he4IC_sizer.Add(self.he4icpumptext, 0, wx.ALL|wx.CENTER)
         self.he4IC_sizer.Add(self.he4IC_voltage_scroll, 1, wx.ALL|wx.CENTER)
@@ -143,7 +155,6 @@ class MainWindow(wx.Frame):
         #Layout sizers
         self.SetSizer(self.master_sizer)    # tell the frame to use this sizer
         self.SetAutoLayout(1)               # ?
-        # self.fridge_control_sizer.Fit(self)           # calculate initial size and positions of all elements
         self.Show(True)
 
     #function to get current time for the log
@@ -185,7 +196,7 @@ class MainWindow(wx.Frame):
         wx.MessageBox('Inputed voltage is out of range \r voltage remains unchanged', 'Error', wx.OK | wx.ICON_ERROR)
 
     def startcycle_action(self, event):
-        if self.cyclerunning == False:
+        if self.abortcycle.is_set() == True:
             # check that a valid data file has been entered
             if os.path.isfile(self.dataFileBox.GetValue()) == False:
                 wx.MessageBox('Please enter a valid fridge data file!', 'Error', wx.OK | wx.ICON_ERROR)
@@ -195,14 +206,21 @@ class MainWindow(wx.Frame):
                 cyclethread = threading.Thread(name='autocycle', target=autocycle.run, args=(h5filename, self, LoggingEvent, self.abortcycle))
                 cyclethread.start()
             self.abortcycle.clear()
-            self.cyclerunning = True
         else:
             self.logBox.AppendText('Fridge cycle is already running, ignoring request to start. \n')
 
     def stopcycle_action(self, event):
-        if self.cyclerunning == True:
+        if self.abortcycle.is_set() == False:
             self.abortcycle.set()
-            self.cyclerunning = False
+            self.logBox.AppendText('Terminating fridge cycle. \n')
+            self.logBox.AppendText('Zeroing all pump heaters and switches. \n')
+            powersupply.set_voltage('4He IC pump', 0.0)
+            powersupply.set_voltage('3He IC pump', 0.0)
+            powersupply.set_voltage('3He UC pump', 0.0)
+            powersupply.set_voltage('4He IC switch', 0.0)
+            powersupply.set_voltage('3He IC switch', 0.0)
+            powersupply.set_voltage('3He UC switch', 0.0)
+            self.logBox.AppendText('Fridge cycle terminated. \n')
         else:
             self.logBox.AppendText('Fridge cycle not running, ignoring request to stop. \n')
 
