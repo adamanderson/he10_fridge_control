@@ -115,6 +115,28 @@ class Lakeshore350:
             print('ERROR: Heater range or output outside of allowed range!')
 
 
+    def set_heater_output(self, output, value):
+        '''
+        Sets the manual output level for a heater. Note that the heater
+        must be configured in manual mode for this to do anything useful.
+
+        Parameters
+        ----------
+        output : int
+            Heater to configure (1 or 2; 3 and 4 not implemented here)
+        value : float
+            Heater value, between 0 and 100
+
+        Returns
+        -------
+        None
+        '''
+        if output in [1,2] and value>=0 and value<=100:
+            self.tcp_interface.sendto('MOUT %d,%.2f\r\n'%(output, value), (self.IPaddress, 7777))
+        else:
+            print('ERROR: Heater range or value outside of allowed range!')
+
+
     def set_PID_temp(self, output, temp):
         '''
         Set the PID temperature setpoint.
