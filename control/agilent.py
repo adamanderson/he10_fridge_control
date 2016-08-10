@@ -58,7 +58,7 @@ class Agilent3631A:
         if channel not in self.chanmapping:
             print('ERROR: Selected channel name not found for this interface.')
             return
-        self.interface.write('APPL %s, %.2f%s' % \
+        self.interface.write('APPL %s, %.2f %s' % \
                              (self.chanmapping[channel], voltage, self.term_string))
 
 
@@ -78,6 +78,8 @@ class Agilent3631A:
         if channel not in self.chanmapping:
             print('ERROR: Selected channel name not found for this interface.')
             return
-        self.interface.write('MEAS:VOLT:DC? %s%s' % \
+        self.interface.write('MEAS:VOLT:DC? %s %s' % \
                              (self.chanmapping[channel], self.term_string))
+        voltage = float(self.interface.readline())
         
+        return voltage
