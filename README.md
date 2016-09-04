@@ -34,6 +34,6 @@ Several problems can occur which are not due to bugs in the repository code, but
 #### Cannot connect to serial ports after Ubuntu update
 If the logger script throws an error after a system update about not being able to connect to port /dev/ttyrXX, the problem is most likely that the driver for the MOXA Nport needs to be recompiled. The MOXA driver links against the specific Linux kernel that is currently running, so changing the version will cause it to fail. To recompile the MOXA driver, simply do the following:
 ```bash
-sudo ./moxa/kernel3.x/mxinst
+sudo /moxa/kernel3.x/mxinst
 ```
 For further reference, see the README file in `/moxa`.
