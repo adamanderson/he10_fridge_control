@@ -19,7 +19,7 @@ import numpy as np
 import cPickle as pickle
 
 # run-specific settings
-overbias_amp = 0.025
+overbias_amp = 0.015
 drobbolos_step = overbias_amp / 1000.
 setpoints = np.linspace(0.25, 0.550, 13)
 output_filename = '%s_G_temp_data.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
@@ -34,9 +34,10 @@ PS1 = PS.Agilent3631A('/dev/ttyr02', '3He UC switch', '3He IC switch', '3He UC p
 PS2 = PS.Agilent3631A('/dev/ttyr03', '4He IC switch', '3He IC pump', '4He IC pump')
 
 # setup pydfmux stuff
-hwm_file = '/home/spt3g/detector_testing/run14/hardware_maps/hwm_slot1/fermilab_hwm_complete.yaml'
+hwm_file = '/home/spt3g/detector_testing/run15/hwm_slot1_bolos/W120.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
-bolos = y['hardware_map'].query(pydfmux.Bolometer)
+hwm = y['hardware_map']
+bolos = hwm.query(pydfmux.Bolometer)
 
 
 waferstarttemps = np.zeros(len(setpoints))
@@ -49,6 +50,8 @@ print('Turning off switches...')
 PS1.set_voltage('3He UC switch', 0)   
 PS1.set_voltage('3He IC switch', 0)     
 time.sleep(300)
+
+
 
 for jtemp in range(len(setpoints)):
     print setpoints[jtemp]
@@ -74,13 +77,28 @@ for jtemp in range(len(setpoints)):
         ChaseLS.set_heater_range(1, 0)
         sys.exit('UC Head failed to stabilize! Zeroed heater and quitting now.')
 
+    # get housekeeping information before operating bolos
     waferstarttemps[jtemp] = WaferLS.get_temps()[channel_of_interest]
     measurestarttimes[jtemp] = time.time()
     print waferstarttemps
 
-    drop_bolos_results = bolos.drop_bolos(A_STEP_SIZE=drobbolos_step, target_amplitude=0.75, fixed_stepsize=False, TOLERANCE=0.1)
-    overbias_results = bolos.overbias_and_null(carrier_amplitude = overbias_amp)
+    # check bolometer states and only drop overbiased bolos
+    for bolo in hwm.query(pydfmux.Bolometer):
+        if bolo.readout_channel:
+            bolo.state = bolo.retrieve_bolo_state().state
+        hwm.commit()
+    bolos_to_drop = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='overbiased')
+    drop_bolos_results = bolos_to_drop.drop_bolos(A_STEP_SIZE=drobbolos_step, target_amplitude=0.75, fixed_stepsize=False, TOLERANCE=0.1)
 
+    # check bolometer states and only drop tuned bolos
+    for bolo in hwm.query(pydfmux.Bolometer):
+        if bolo.readout_channel:
+            bolo.state = bolo.retrieve_bolo_state().state
+        hwm.commit()
+    bolos_to_overbias = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='tuned')
+    overbias_results = bolos_to_overbias.overbias_and_null(carrier_amplitude = overbias_amp, scale_by_frequency=True)
+
+    # get housekeeping information after operating bolos
     waferstoptemps[jtemp] = WaferLS.get_temps()[channel_of_interest]
     measurestoptimes[jtemp] = time.time()
     print waferstoptemps

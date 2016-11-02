@@ -17,7 +17,7 @@ import cPickle as pickle
 
 # cryostat-specific settings
 heater_vals = np.array([0.0, 0.7, 1.4, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0])
-logfile = '/home/spt3g/he10_fridge_tools/production/he10_fridge_control/logger/data/run13_log_read.h5'
+logfile = '/home/spt3g/he10_fridge_tools/production/he10_fridge_control/logger/data/run14_log_read.h5'
 blackbody_channame = 'blackbody'
 
 ChaseLS = LS.Lakeshore350('192.168.0.12',  ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
@@ -25,7 +25,7 @@ WaferLS = LS.Lakeshore350('192.168.2.5',  ['wafer holder', '3G IC head', '3G UC 
 WaferLS.config_output(1,3,0)
 
 # setup pydfmux stuff
-hwm_file = '/home/spt3g/detector_testing/run13/hardware_maps/hwm_slot_1_released/fermilab_hwm_complete.yaml'
+hwm_file = '/home/spt3g/detector_testing/run14/hardware_maps/hwm_slot1/fermilab_hwm_complete.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 bolos = y['hardware_map'].query(pydfmux.Bolometer)
 
@@ -52,9 +52,25 @@ for jpower in range(len(heater_vals)):
     housekeeping['stagetemp'].append(gt.gettemp(logfile, 'wafer holder'))
     housekeeping['starttemp'].append(gt.gettemp(logfile, blackbody_channame))
     housekeeping['starttime'].append(datetime.datetime.now())
-    drop_bolos_results = bolos.drop_bolos(A_STEP_SIZE=0.00002, target_amplitude=0.75, fixed_stepsize=False, TOLERANCE=0.1)
+
+    # check bolometer states and only drop overbiased bolos
+    for bolo in hwm.query(pydfmux.Bolometer):
+        if bolo.readout_channel:
+            bolo.state = bolo.retrieve_bolo_state().state
+        hwm.commit()
+    bolos_to_drop = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='overbiased')
+    drop_bolos_results = bolos_to_drop.drop_bolos(A_STEP_SIZE=0.00002, target_amplitude=0.75, fixed_stepsize=False, TOLERANCE=0.05)
+
+    # record final temperature
     housekeeping['stoptemp'].append(gt.gettemp(logfile, blackbody_channame))
-    overbias_results = bolos.overbias_and_null(carrier_amplitude = 0.03)
+
+    # check bolometer states and only drop tuned bolos
+    for bolo in hwm.query(pydfmux.Bolometer):
+        if bolo.readout_channel:
+            bolo.state = bolo.retrieve_bolo_state().state
+        hwm.commit()
+    bolos_to_overbias = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='tuned')
+    overbias_results = bolos_to_overbias.overbias_and_null(carrier_amplitude=0.015, scale_by_frequency=True)
 
     # save housekeeping data after each measurement to avoid losses
     f = file(output_filename, 'w')
