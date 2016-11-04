@@ -8,6 +8,83 @@
 # 25 April 2016
 
 import socket
+import serial
+
+class Lakeshore218:
+    def __init__(self, device, channames):
+        '''
+        Constructor
+        
+        Parameters
+        ----------
+        interface : str
+            Serial device name.
+        channames : Python list of str
+            Names of channels
+        
+        Returns
+        -------
+        None
+        '''
+        self.device_name = device
+        self.channel_names = channames
+
+        self.serial_interface = serial.Serial(self.device_name, 9600, serial.SEVENBITS, serial.PARITY_ODD, serial.STOPBITS_ONE)
+
+    def query_temps(self):
+        '''
+        Request temperature measurements from box.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        '''
+        serial_interface.write('KRDG?\r\n')
+
+
+    def read_queue(self):
+        '''
+        Read whatever data is in the queue.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        output : str
+            Contents of the queue.
+        '''
+        output = serial_interface.read(serial_interface.inWaiting())
+        return output
+
+
+    def get_temps(self):
+        '''
+        Request a temperature measurement and then get it from 
+        the queue, split merrily into a dictionary indexed by 
+        channel name.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        temps : dict
+            Measured temperatures
+        '''
+        self.query_temps()
+        output = self.read_queue()
+        
+        temps = {self.channel_names[jchan]: float(output.split(',')[jchan]) \
+                 for jchan in range(len(self.channel_names))}
+        return temps
+
 
 class Lakeshore350:
     def __init__(self, address, channames):
