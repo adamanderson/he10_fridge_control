@@ -113,5 +113,5 @@ def update_plot(tables_list, plot_list):
 
     plt.xlabel('time')
     plt.subplots_adjust(left=0.10, bottom=0.1, right=0.75, top=0.92, wspace=0.21, hspace=0.1)
-    plt.savefig('../img/temperature_plot.png')
+    plt.savefig('../website/img/temperature_plot.png')
     plt.clf()

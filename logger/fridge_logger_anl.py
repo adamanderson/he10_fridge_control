@@ -16,6 +16,7 @@ import numpy as np
 import tables
 import os.path
 import shutil
+import collections as clcs
 
 import plotter
 
@@ -25,7 +26,7 @@ import plotter
 # is simply the serial interface or IP address of the Lakeshore box.
 channel_map = {'/dev/ttyr13':   ['He4 IC Switch', 'He3 IC Switch', 'He3 UC Pump', 'He3 UC Switch',
                                     'He3 IC Pump', 'mainplate', 'HEX', 'He4 IC Pump'],
-               '/dev/ttyr18':   ['UC Head', 'IC Head', 'PTC 4K Plate', 'PTC 50K Plate',
+               '/dev/ttyr18':   ['UC Head', 'IC Head', 'PTC 50K Plate', 'PTC 4K Plate',
                                  'SQUID D1', 'SQUID D2']}
 
 # Specify the variables to be plotted in each subplot of the display. This
@@ -36,7 +37,7 @@ channel_map = {'/dev/ttyr13':   ['He4 IC Switch', 'He3 IC Switch', 'He3 UC Pump'
 # each y-axis scale.
 plot_list = [[['He4 IC Pump', 'He3 IC Pump', 'He3 UC Pump'], ['He4 IC Switch', 'He3 IC Switch', 'He3 UC Switch']],
              [['HEX', 'mainplate']],
-             [['PTC 4K stage'], ['PTC 50K stage']],
+             [['PTC 4K Plate'], ['PTC 50K Plate']],
              [['UC Head', 'IC Head']],
              [['SQUID D1', 'SQUID D2']]]
 
@@ -51,12 +52,12 @@ split_char_map = {'LS340':';',
                     'LS218':','}
 
 #Coopting this to use as LS340 Channel mapper since you can't just grab all channels at once.
-channel_maps = {'LS340': {'A':'UC Head',
+channel_maps = {'LS340': clcs.OrderedDict({'A':'UC Head',
                 'B': 'IC Head',
                 'C1': 'PTC 4K Plate',
                 'C2': 'PTC 50K Plate',
                 'D1': 'SQUID D1',
-                'D2': 'SQUID D2'},
+                'D2': 'SQUID D2'}),
                 'LS218': None}
 
 
@@ -120,18 +121,21 @@ for interface_address in tcp_interface_address:
 # main data acquisition loop
 try:
     while True:
+        firstRun = False
         # query the devices
         for interface_name in serial_interfaces:
             if interface_map[interface_name] is 'LS218':
                 serial_interfaces[interface_name].write('KRDG?\r\n')
             elif interface_map[interface_name] is 'LS340':
                 tmp_query = ""
-                for ch in channel_maps[interface_map[interface_name]]:
-                    tmp_query += 'KRDG? ' + ch + ';'
+                for ch_num, ch_name in channel_maps[interface_map[interface_name]].iteritems():
+                    tmp_query += 'KRDG? ' + ch_num + ';'
 
                 tmp_query = tmp_query[:-1] + '\r\n'
+                if firstRun:
+                    print tmp_query
 
-                serial_interfaces[interface_name].write('KRDG? ' + ch + '\r\n')
+                serial_interfaces[interface_name].write(tmp_query)
             else:
                 raise NameError("Unknown device.")
 
@@ -149,6 +153,12 @@ try:
             # check that we actually got a response with data in it (occasionally the MOXA
             # is non-responsive), otherwise do nothing
             split_char = split_char_map[interface_map[interface_name]]
+
+            if firstRun:
+                print interface_name + '\n'
+                print raw_output + '\n'
+                print raw_output.split(split_char)
+                print '\n'
 
             if len(raw_output.split(split_char)) > 0:
                 for jValue in range(len(channel_map[interface_name])):
@@ -183,7 +193,7 @@ try:
 
         # update the plots
         plotter.update_plot(tables_list, plot_list)
-        plotter.write_table('datatable.html', tables_list, plot_list)
+        plotter.write_table('../website/datatable.html', tables_list, plot_list)
 
         # make a copy of the data file; useful for other processes that need
         # access to the latest data since we cannot do simultaneous read/write
@@ -193,6 +203,8 @@ try:
 
         # wait before reading again
         time.sleep(dt_update)
+
+        firstRun = False
 
 except KeyboardInterrupt:
     print "\nStopping data acquisition"
