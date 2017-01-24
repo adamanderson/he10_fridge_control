@@ -47,7 +47,7 @@ plot_list = [[['He4 IC Pump', 'He3 IC Pump', 'He3 UC Pump'], ['He4 IC Switch', '
 interface_map = {'/dev/ttyr13':'LS218',
                 '/dev/ttyr18':'LS340'}
 
-split_char_map = {'LS340':'\r\n',
+split_char_map = {'LS340':';',
                     'LS218':','}
 
 #Coopting this to use as LS340 Channel mapper since you can't just grab all channels at once.
@@ -133,7 +133,7 @@ try:
 
                 serial_interfaces[interface_name].write('KRDG? ' + ch + '\r\n')
             else:
-                raise NameError("Unknonw device.")
+                raise NameError("Unknown device.")
 
         for interface_address in tcp_interfaces:
             tcp_interfaces[interface_address].sendto('KRDG? 0\r\n', (interface_address, 7777))
