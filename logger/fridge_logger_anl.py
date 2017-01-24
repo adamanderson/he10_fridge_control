@@ -125,8 +125,13 @@ try:
             if interface_map[interface_name] is 'LS218':
                 serial_interfaces[interface_name].write('KRDG?\r\n')
             elif interface_map[interface_name] is 'LS340':
+                tmp_query = ""
                 for ch in channel_maps[interface_map[interface_name]]:
-                    serial_interfaces[interface_name].write('KRDG? ' + ch + '\r\n')
+                    tmp_query += 'KRDG? ' + ch + ';'
+
+                tmp_query = tmp_query[:-1] + '\r\n'
+
+                serial_interfaces[interface_name].write('KRDG? ' + ch + '\r\n')
             else:
                 raise NameError("Unknonw device.")
 
