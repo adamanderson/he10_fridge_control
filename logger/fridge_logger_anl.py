@@ -145,11 +145,11 @@ try:
             # is non-responsive), otherwise do nothing
             split_char = split_char_map[interface_map[interface_name]]
 
-            if len(raw_output.split(',')) > 0:
+            if len(raw_output.split(split_char)) > 0:
                 for jValue in range(len(channel_map[interface_name])):
                     channel_name = channel_map[interface_name][jValue]
                     tables_list[channel_name].row['time'] = current_time
-                    tables_list[channel_name].row[channel_name] = float(raw_output.split(',')[jValue])
+                    tables_list[channel_name].row[channel_name] = float(raw_output.split(split_char)[jValue])
                     tables_list[channel_name].row.append()
                     tables_list[channel_name].flush()
 
