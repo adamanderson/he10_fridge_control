@@ -164,7 +164,12 @@ try:
                 for jValue in range(len(channel_map[interface_name])):
                     channel_name = channel_map[interface_name][jValue]
                     tables_list[channel_name].row['time'] = current_time
-                    tables_list[channel_name].row[channel_name] = float(raw_output.split(split_char)[jValue])
+                    try:
+                        tables_list[channel_name].row[channel_name] = float(raw_output.split(split_char)[jValue])
+                    except ValueError:
+                        print repr(raw_output.split(split_char)[jValue])
+                        tables_list[channel_name].row[channel_name] = float(raw_output.strip().split(split_char)[jValue])
+                    #tables_list[channel_name].row[channel_name] = float(raw_output.split(split_char)[jValue])
                     tables_list[channel_name].row.append()
                     tables_list[channel_name].flush()
 
