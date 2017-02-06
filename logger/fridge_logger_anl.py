@@ -84,7 +84,7 @@ def read_temp_LS(interface, channel, num_trys = 10, delay = 0.1):
         time.sleep(delay)
 
         #Read all the bytes that are at the port
-        raw_output += interface.read(interface.inWaiting())
+        raw_output = interface.read(interface.inWaiting())
 
         #Check that the string ends with the terminator. If not, try again
         if raw_output[-2:] == '\r\n'
@@ -100,6 +100,7 @@ def read_temp_LS(interface, channel, num_trys = 10, delay = 0.1):
 
         #Welp, that didn't work, try again!
         print 'Problem reading from: ' + interface + ':' + channel
+        print 'Raw output is: ' + repr(raw_output)
         print 'Will try ' + str(num_trys - 1 - num) + ' more times before aborting.'
         time.sleep(delay)
 
