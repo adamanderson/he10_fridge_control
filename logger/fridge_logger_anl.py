@@ -99,7 +99,7 @@ def read_temp_LS(interface, channel, num_trys = 10, delay = 0.1):
                 return temp
 
         #Welp, that didn't work, try again!
-        print 'Problem reading from: ' + interface + ':' + channel
+        print 'Problem reading from: ' + interface.name + ':' + channel
         print 'Raw output is: ' + repr(raw_output)
         print 'Will try ' + str(num_trys - 1 - num) + ' more times before aborting.'
         time.sleep(delay)
