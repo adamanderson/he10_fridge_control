@@ -87,7 +87,7 @@ def read_temp_LS(interface, channel, num_trys = 10, delay = 0.1):
         raw_output = interface.read(interface.inWaiting())
 
         #Check that the string ends with the terminator. If not, try again
-        if raw_output[-2:] == '\r\n'
+        if raw_output[-2:] == '\r\n':
             #If the data is bad or incomplete, float conversion may fail
             try:
                 #Strip off the term char (usually '\r\n'))
@@ -123,31 +123,31 @@ except tables.NoSuchNodeError:
     group_all_data = f_h5.create_group('/', 'data', 'all data')
 tables_list = dict()
 for interface in channel_map:
-    for channel in channel_map[interface]:
+    for channel_name, channel_num in channel_map[interface]:
         try:
             # try pulling table from the file, which should work if it exists
-            tables_list[channel] = f_h5.get_node('/data/' + underscoreify(channel))
+            tables_list[channel_name] = f_h5.get_node('/data/' + underscoreify(channel_name))
         except tables.NoSuchNodeError:
             # otherwise, the file presumably doesn't exist and we need new tables
-            table_columns = {'time': tables.Time32Col(), channel: tables.Float32Col()}
-            tables_list[channel] = f_h5.create_table(group_all_data, underscoreify(channel), table_columns, channel)
+            table_columns = {'time': tables.Time32Col(), channel_name: tables.Float32Col()}
+            tables_list[channel_name] = f_h5.create_table(group_all_data, underscoreify(channel_name), table_columns, channel_name)
 
 # set up the serial interfaces
 serial_interfaces = dict()
 for interface_address in channel_map.keys():
-    serial_interfaces[interface_address] = serial.Serial(interface_address,
-                                                         9600,
-                                                         serial.SEVENBITS,
-                                                         serial.PARITY_ODD,
-                                                         serial.STOPBITS_ONE)
+    serial_interfaces[interface_address] = serial.Serial(port=interface_address,
+                                                         baudrate=9600,
+                                                         bytesize=serial.SEVENBITS,
+                                                         parity=serial.PARITY_ODD,
+                                                         stopbits=serial.STOPBITS_ONE)
 
 
 # main data acquisition loop
 try:
     while True:
 
-        for serial_interface in serial_interfaces:
-            for channel_name, channel_num in channel_map[serial_interface]:
+        for interface_address, serial_interface in serial_interfaces.iteritems():
+            for channel_name, channel_num in channel_map[interface_address]:
                 #Fill up the columns of a table row with data
                 tables_list[channel_name].row[channel_name] = read_temp_LS(serial_interface, channel_num)
                 tables_list[channel_name].row['time'] = time.time()
