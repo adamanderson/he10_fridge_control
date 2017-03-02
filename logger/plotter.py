@@ -46,7 +46,7 @@ def write_table(outfilename, tables_list, plot_list):
     outfile.close()
 
 
-def update_plot(tables_list, plot_list):
+def update_plot(outfilename, tables_list, plot_list):
     '''
     update_plot(tables_list, plot_list)
 
@@ -54,6 +54,7 @@ def update_plot(tables_list, plot_list):
 
     Parameters:
     -----------
+    outfilename:  filename (including path) to write the image to
     tables_list:  dictionary of PyTables tables, containing (possibly a superset of)
                   the data to plot
     plot_list:    list of lists of (1 or 2) lists of strings indicating the
@@ -64,8 +65,6 @@ def update_plot(tables_list, plot_list):
     Returns:
     --------
     (None)
-
-    NB: Output figure is saved to a hardcoded path!
     '''
     time_to_show = 3600 #[s]
     num_subplots = len(plot_list)
@@ -113,5 +112,5 @@ def update_plot(tables_list, plot_list):
 
     plt.xlabel('time')
     plt.subplots_adjust(left=0.10, bottom=0.1, right=0.75, top=0.92, wspace=0.21, hspace=0.1)
-    plt.savefig('../website/img/temperature_plot.png')
+    plt.savefig(outfilename)
     plt.clf()

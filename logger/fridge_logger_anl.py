@@ -60,6 +60,7 @@ plot_list = [[['He4 IC Pump', 'He3 IC Pump', 'He3 UC Pump'],
 # update frequency
 dt_update = 2  # sec
 
+base_path = os.path.dirname(os.path.abspath(__file__))
 
 # convenience functions for adding and removing underscores
 def underscoreify(string):
@@ -159,8 +160,8 @@ try:
                 tables_list[channel_name].flush()
 
         # update the plots
-        plotter.update_plot(tables_list, plot_list)
-        plotter.write_table('../website/datatable.html', tables_list, plot_list)
+        plotter.update_plot(base_path + '/../website/img/temperature_plot.png' ,tables_list, plot_list)
+        plotter.write_table(base_path + '/../website/datatable.html', tables_list, plot_list)
 
         # make a copy of the data file; useful for other processes that need
         # access to the latest data since we cannot do simultaneous read/write

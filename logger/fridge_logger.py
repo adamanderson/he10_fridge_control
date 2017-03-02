@@ -60,6 +60,8 @@ def deunderscoreify(string):
 # update frequency
 dt_update = 2  # sec changed to 1 sec for RT
 
+base_path = os.path.dirname(os.path.abspath(__file__))
+
 # file name
 data_filename = raw_input('Enter relative path to data file (must end in .h5). NB: If enter an existing filename, the script will attempt to append that file, by default: ')
 if os.path.isfile(data_filename) == True:
@@ -133,7 +135,7 @@ try:
                     tables_list[channel_name].row[channel_name] = float(raw_output.split(',')[jValue])
                     tables_list[channel_name].row.append()
                     tables_list[channel_name].flush()
-        
+
         # for the TCP interfaces, also get the raw sensor values and substitute these
         # in for the temperature if the temperature reads exactly zero
         raw_output_temp = dict()
@@ -158,8 +160,8 @@ try:
 
 
         # update the plots
-        plotter.update_plot(tables_list, plot_list)
-        plotter.write_table('datatable.html', tables_list, plot_list)
+        plotter.update_plot(base_path + '/../website/img/temperature_plot.png' ,tables_list, plot_list)
+        plotter.write_table(base_path + '/../website/datatable.html', tables_list, plot_list)
 
         # make a copy of the data file; useful for other processes that need
         # access to the latest data since we cannot do simultaneous read/write
