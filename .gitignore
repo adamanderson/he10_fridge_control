@@ -2,3 +2,7 @@
 *.*~
 *.py#
 /Lauren/*
+
+#Ignore auto-generated files
+temperature_plot.png
+datatable.html
