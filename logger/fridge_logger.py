@@ -25,10 +25,10 @@ import plotter
 # is simply the serial interface or IP address of the Lakeshore box.
 channel_map = {'/dev/ttyr00':   ['HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump',
                                  'He3 UC Pump', 'He4 IC Switch', 'He3 IC Switch',  'He3 UC Switch'],
-               '/dev/ttyr01':   ['PTC 4K stage', 'PTC 50K stage', 'channel 2', 'channel 3',
-                                 'wiring harness', '4K shield near harness', 'SQUID 5',  'SQUID 7'],
-               '192.168.0.12':  ['UC Head', 'IC Head', 'UC stage', 'LC shield'],
-               '192.168.2.5':   ['wafer holder', '3G IC head', '3G UC head', '3G 4He head']}
+               '/dev/ttyr01':   ['PTC 4K stage', 'PTC 50K stage', 'cold load center', 'cold load side',
+                                 'blackbody', '4K shield near harness', 'SQUID 6',  'SQUID 7'],
+               '192.168.0.12':  ['UC Head', 'IC Head', 'channel C', 'channel D'],
+               '192.168.2.5':   ['UC stage', '3G IC head', '3G UC head', '3G 4He head']}
 
 # Specify the variables to be plotted in each subplot of the display. This
 # should be a list of lists of (1 or 2) lists of strings, where each outer list contains the variables
@@ -39,9 +39,9 @@ channel_map = {'/dev/ttyr00':   ['HEX', 'mainplate', 'He4 IC Pump', 'He3 IC Pump
 plot_list = [[['He4 IC Pump', 'He3 IC Pump', 'He3 UC Pump'], ['He4 IC Switch', 'He3 IC Switch', 'He3 UC Switch']],
              [['HEX', 'mainplate']],
              [['PTC 4K stage'], ['PTC 50K stage']],
-             [['UC Head', 'IC Head', 'wafer holder', 'UC stage']],
-             [['wiring harness', '4K shield near harness', 'SQUID 5', 'SQUID 7']],
-             [['3G 4He head', '3G UC head'], ['3G IC head']]]
+             [['UC Head', 'IC Head', 'UC stage']],
+             [['4K shield near harness', 'SQUID 6', 'SQUID 7']],
+             [['cold load center', 'cold load side', 'blackbody']]]
 
 # Specify mapping of {"interface" -> "human-readable description"}. This isn't
 # used for anything specific right now, but it is worth having some more human-
