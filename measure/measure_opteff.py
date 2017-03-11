@@ -9,7 +9,6 @@
 import pydfmux
 import he10_fridge_control.control.lakeshore as LS
 import he10_fridge_control.control.gettemp as gt
-import he10_fridge_control.control.pid as pid
 import time
 import datetime
 import numpy as np
@@ -25,7 +24,7 @@ WaferLS = LS.Lakeshore350('192.168.2.5',  ['wafer holder', '3G IC head', '3G UC 
 WaferLS.config_output(1,3,0)
 
 # setup pydfmux stuff
-hwm_file = '/home/spt3g/detector_testing/run14/hardware_maps/hwm_slot1/fermilab_hwm_complete.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 bolos = y['hardware_map'].query(pydfmux.Bolometer)
 
