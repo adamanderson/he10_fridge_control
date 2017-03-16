@@ -1,3 +1,4 @@
+
 # measure_opteff.py
 #
 # Script for measuring optical efficiency.
@@ -15,17 +16,18 @@ import numpy as np
 import cPickle as pickle
 
 # cryostat-specific settings
-heater_vals = np.array([0.0, 0.7, 1.4, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0])
-logfile = '/home/spt3g/he10_fridge_tools/production/he10_fridge_control/logger/data/run14_log_read.h5'
+heater_vals = np.array([0., 1., 2., 3., 4., 5., 6.])
+logfile = '/daq/fnal_temp_logs/run17_log_read.h5'
 blackbody_channame = 'blackbody'
 
-ChaseLS = LS.Lakeshore350('192.168.0.12',  ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
-WaferLS = LS.Lakeshore350('192.168.2.5',  ['wafer holder', '3G IC head', '3G UC head', '3G 4He head'])
+ChaseLS = LS.Lakeshore350('192.168.0.12',  ['UC Head', 'IC Head', 'channel C', 'channel D'])
+WaferLS = LS.Lakeshore350('192.168.2.5',  ['UC stage', 'channel B', 'channel C', 'channel D'])
 WaferLS.config_output(1,3,0)
 
 # setup pydfmux stuff
-hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run17-0136/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
+hwm = y['hardware_map']
 bolos = y['hardware_map'].query(pydfmux.Bolometer)
 
 # dict of housekeeping data
@@ -48,17 +50,40 @@ for jpower in range(len(heater_vals)):
 
     # once blackbody has stabilized, take noise
     housekeeping['heaterval'].append(heater_vals[jpower])
-    housekeeping['stagetemp'].append(gt.gettemp(logfile, 'wafer holder'))
+    housekeeping['stagetemp'].append(gt.gettemp(logfile, 'UC stage'))
     housekeeping['starttemp'].append(gt.gettemp(logfile, blackbody_channame))
     housekeeping['starttime'].append(datetime.datetime.now())
 
+    # check bolometer states and only drop overbiased bolos
+    for bolo in hwm.query(pydfmux.Bolometer):
+        if bolo.readout_channel:
+            bolo.state = bolo.retrieve_bolo_state().state
+        hwm.commit()
+    bolos_to_drop = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='overbiased')
+    drop_bolos_results = bolos_to_drop.drop_bolos(A_STEP_SIZE=0.00006, target_amplitude=0.9, fixed_stepsize=False, TOLERANCE=0.02)
+    
     # measure noise
     alive = bolos.find_alive_bolos()
-    alive.dump_info()
-
+    noise_results = alive.dump_info()
+    
     # record final temperature
+    housekeeping['datadir'].append(noise_results[noise_results.keys()[0]]['output_directory'])
     housekeeping['stoptemp'].append(gt.gettemp(logfile, blackbody_channame))
 
+    # check bolometer states and only drop tuned bolos
+    for bolo in hwm.query(pydfmux.Bolometer):
+        if bolo.readout_channel:
+            bolo.state = bolo.retrieve_bolo_state().state
+        hwm.commit()
+    bolos_to_overbias = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='tuned')
+    overbias_results = bolos_to_overbias.overbias_and_null(carrier_amplitude=False,
+                                                           scale_by_frequency=True,
+                                                           maxnoise=200,
+                                                           bias_power=True,
+                                                           shorted_threshold=1.5,
+                                                           max_resistance=6,
+                                                           use_dan_gain=0.01)
+            
     # save housekeeping data after each measurement to avoid losses
     f = file(output_filename, 'w')
     pickle.dump(housekeeping, f)
