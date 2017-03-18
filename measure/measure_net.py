@@ -25,13 +25,13 @@ WaferLS = LS.Lakeshore350('192.168.2.5',  ['UC stage', 'channel B', 'channel C',
 WaferLS.config_output(1,3,0)
 
 # setup pydfmux stuff
-hwm_file = '/home/adama/hardware_maps/fnal/run17-0136/hwm.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm_SPTpol_only/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 hwm = y['hardware_map']
 bolos = y['hardware_map'].query(pydfmux.Bolometer)
 
 # dict of housekeeping data
-output_filename = '%s_opteff_housekeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
+output_filename = '%s_net_housekeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
 housekeeping = {'starttime': [],
                 'starttemp': [],
                 'stoptemp': [],
