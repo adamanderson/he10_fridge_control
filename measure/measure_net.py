@@ -32,7 +32,8 @@ bolos = y['hardware_map'].query(pydfmux.Bolometer)
 
 # dict of housekeeping data
 output_filename = '%s_net_housekeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
-housekeeping = {'starttime': [],
+housekeeping = {'datadir': [],
+                'starttime': [],
                 'starttemp': [],
                 'stoptemp': [],
                 'heaterval': [],
