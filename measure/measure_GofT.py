@@ -19,31 +19,38 @@ import numpy as np
 import cPickle as pickle
 
 # run-specific settings
-overbias_amp = 0.015
-drobbolos_step = overbias_amp / 1000.
-setpoints = np.linspace(0.25, 0.550, 13)
-output_filename = '%s_G_temp_data.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
+overbias_amp = 0.018
+drobbolos_step = 0.00005
+dropbolos_target = 0.9
+dropbolos_tolerance = 0.02
+setpoints = np.linspace(0.25, 0.550, 10)
 
 # cryostat-specific settings
 PID_channel = 'UC Head'
-channel_of_interest = 'wafer holder'
-ChaseLS = LS.Lakeshore350('192.168.0.12',  ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
-WaferLS = LS.Lakeshore350('192.168.2.5',  ['wafer holder', '3G IC head', '3G UC head', '3G 4He head'])
+channel_of_interest = 'UC stage'
+ChaseLS = LS.Lakeshore350('192.168.0.12',
+                          ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
+WaferLS = LS.Lakeshore350('192.168.2.5',
+                          ['UC stage', 'channel B', 'channel C', 'channel D'])
 ChaseLS.config_output(1,1,ChaseLS.channel_names.index(PID_channel)+1)
-PS1 = PS.Agilent3631A('/dev/ttyr02', '3He UC switch', '3He IC switch', '3He UC pump')
-PS2 = PS.Agilent3631A('/dev/ttyr03', '4He IC switch', '3He IC pump', '4He IC pump')
+PS1 = PS.Agilent3631A('/dev/ttyr02',
+                      '3He UC switch', '3He IC switch', '3He UC pump')
+PS2 = PS.Agilent3631A('/dev/ttyr03',
+                      '4He IC switch', '3He IC pump', '4He IC pump')
 
 # setup pydfmux stuff
-hwm_file = '/home/spt3g/detector_testing/run15/hwm_slot1_bolos/W120.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm_3G_only/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 hwm = y['hardware_map']
 bolos = hwm.query(pydfmux.Bolometer)
 
-
-waferstarttemps = np.zeros(len(setpoints))
-measurestarttimes = np.zeros(len(setpoints))
-waferstoptemps = np.zeros(len(setpoints))
-measurestoptimes = np.zeros(len(setpoints))
+# dict of housekeeping data
+output_filename = '%s_G_temp_data.pkl' % '{:%Y%m%d_%H%M%S}'
+                   .format(datetime.datetime.now())
+housekeeping = {'drop_bolos datadir': [],
+                'overbias datadir': [],
+                '{} start temp'.format(channel_of_interest): [],
+                '{} stop temp'.format(channel_of_interest): []}
 
 # unlatch the switches
 print('Turning off switches...')
@@ -51,12 +58,9 @@ PS1.set_voltage('3He UC switch', 0)
 PS1.set_voltage('3He IC switch', 0)     
 time.sleep(300)
 
-
-
+# take data at each temperature
 for jtemp in range(len(setpoints)):
-    print setpoints[jtemp]
     print('Setting UC head to %f mK.' % (setpoints[jtemp]*1e3))
-
     ChaseLS.set_PID_temp(1, setpoints[jtemp])
     ChaseLS.set_heater_range(1, 2)
     time.sleep(10*60)
@@ -72,45 +76,51 @@ for jtemp in range(len(setpoints)):
         nAttempts = nAttempts + 1
         if recenttemps[-1]>0 and recenttemps[-4]>0:
             print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
-            print('Wafer holder drifted %f mK.' % 1e3*np.abs(recenttemps[-1] - recenttemps[-4]))
+            print('Wafer holder drifted %f mK.' % 1e3*np.abs(recenttemps[-1] -
+                                                             recenttemps[-4]))
     if nAttempts == 45:
         ChaseLS.set_heater_range(1, 0)
         sys.exit('UC Head failed to stabilize! Zeroed heater and quitting now.')
 
     # get housekeeping information before operating bolos
-    waferstarttemps[jtemp] = WaferLS.get_temps()[channel_of_interest]
-    measurestarttimes[jtemp] = time.time()
-    print waferstarttemps
+    housekeeping['{} start temp'.format(channel_of_interest)]
+        .append(WaferLS.get_temps()[channel_of_interest])
 
     # check bolometer states and only drop overbiased bolos
     for bolo in hwm.query(pydfmux.Bolometer):
         if bolo.readout_channel:
             bolo.state = bolo.retrieve_bolo_state().state
         hwm.commit()
-    bolos_to_drop = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='overbiased')
-    drop_bolos_results = bolos_to_drop.drop_bolos(A_STEP_SIZE=drobbolos_step, target_amplitude=0.75, fixed_stepsize=False, TOLERANCE=0.1)
+    bolos_to_drop = hwm.query(pydfmux.Bolometer)
+                       .filter(pydfmux.Bolometer.state=='overbiased')
+    drop_bolos_results = bolos_to_drop.drop_bolos(A_STEP_SIZE=drobbolos_step,
+                                                  target_amplitude=dropbolos_target,
+                                                  fixed_stepsize=False,
+                                                  TOLERANCE=dropbolos_tolerance)
 
+    # get housekeeping information after operating bolos
+    housekeeping['{} start temp'.format(channel_of_interest)]
+        .append(WaferLS.get_temps()[channel_of_interest]) 
+    
     # check bolometer states and only drop tuned bolos
     for bolo in hwm.query(pydfmux.Bolometer):
         if bolo.readout_channel:
             bolo.state = bolo.retrieve_bolo_state().state
         hwm.commit()
-    bolos_to_overbias = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='tuned')
-    overbias_results = bolos_to_overbias.overbias_and_null(carrier_amplitude = overbias_amp, scale_by_frequency=True)
+    bolos_to_overbias = hwm.query(pydfmux.Bolometer)
+                           .filter(pydfmux.Bolometer.state=='tuned')
+    overbias_results = bolos_to_overbias.overbias_and_null(carrier_amplitude=overbias_amp,
+                                                           scale_by_frequency=True)
 
-    # get housekeeping information after operating bolos
-    waferstoptemps[jtemp] = WaferLS.get_temps()[channel_of_interest]
-    measurestoptimes[jtemp] = time.time()
-    print waferstoptemps
-
+    # record data directories
+    housekeeping['drop_bolos datadir']
+            .append(drop_bolos_results[drop_bolos_results.keys()[0]]['output_directory'])
+    housekeeping['overbias datadir']
+            .append(overbias_results[overbias_results.keys()[0]]['output_directory'])
+    
     # save the data to a pickle file, rewriting after each acquisition
     f = file(output_filename, 'w')
-    pickle.dump([waferstarttemps, measurestarttimes, waferstoptemps, measurestoptimes], f)
+    pickle.dump(housekeeping, f)
     f.close()
 
 ChaseLS.set_heater_range(1, 0)
-
-print waferstarttemps
-print measurestarttimes
-print waferstoptemps
-print measurestoptimes
