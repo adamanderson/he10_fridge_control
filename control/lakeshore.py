@@ -9,6 +9,7 @@
 
 import socket
 import serial
+import time
 
 class Lakeshore218:
     def __init__(self, device, channames):
@@ -31,37 +32,6 @@ class Lakeshore218:
 
         self.serial_interface = serial.Serial(self.device_name, 9600, serial.SEVENBITS, serial.PARITY_ODD, serial.STOPBITS_ONE)
 
-    def query_temps(self):
-        '''
-        Request temperature measurements from box.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
-        '''
-        serial_interface.write('KRDG?\r\n')
-
-
-    def read_queue(self):
-        '''
-        Read whatever data is in the queue.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        output : str
-            Contents of the queue.
-        '''
-        output = serial_interface.read(serial_interface.inWaiting())
-        return output
-
 
     def get_temps(self):
         '''
@@ -78,9 +48,9 @@ class Lakeshore218:
         temps : dict
             Measured temperatures
         '''
-        self.query_temps()
-        output = self.read_queue()
-        
+        self.serial_interface.write('KRDG?\r\n')
+        time.sleep(0.1) # wait for response from slow device
+        output = self.serial_interface.read(self.serial_interface.inWaiting())
         temps = {self.channel_names[jchan]: float(output.split(',')[jchan]) \
                  for jchan in range(len(self.channel_names))}
         return temps
