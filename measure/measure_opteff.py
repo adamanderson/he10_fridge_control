@@ -14,11 +14,17 @@ import datetime
 import numpy as np
 import cPickle as pickle
 
-# cryostat-specific settings
+# run-specific settings
+overbias_amp = 0.018
+drobbolos_step = 0.00005
+dropbolos_target = 0.9
+dropbolos_tolerance = 0.02
 heater_vals = np.array([0.0, 0.7, 1.4, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0])
+
+# cryostat-specific settings
 logfile = '/home/spt3g/he10_fridge_tools/production/he10_fridge_control/logger/data/run14_log_read.h5'
 blackbody_channame = 'blackbody'
-
+stage_channame = 'UC stage'
 ChaseLS = LS.Lakeshore350('192.168.0.12',  ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
 WaferLS = LS.Lakeshore350('192.168.2.5',  ['wafer holder', '3G IC head', '3G UC head', '3G 4He head'])
 WaferLS.config_output(1,3,0)
@@ -26,16 +32,19 @@ WaferLS.config_output(1,3,0)
 # setup pydfmux stuff
 hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
-bolos = y['hardware_map'].query(pydfmux.Bolometer)
+hwm = y['hardware_map']
+bolos = hwm.query(pydfmux.Bolometer)
 
 # dict of housekeeping data
 output_filename = '%s_opteff_housekeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
-housekeeping = {'starttime': [],
-                'starttemp': [],
-                'stoptemp': [],
-                'heaterval': [],
-                'stagetemp': []}
-
+housekeeping = {'drop_bolos datadir': [],
+                'overbias datadir': [],
+                '{} start temp'.format(blackbody_channame): [],
+                '{} stop temp'.format(blackbody_channame): [],
+                '{} start temp'.format(stage_channame): [],
+                '{} stop temp'.format(stage_channame): [],
+                'heater value': []}
+                
 for jpower in range(len(heater_vals)):
     print('Setting heater to %f.' % heater_vals[jpower])
 
@@ -47,30 +56,46 @@ for jpower in range(len(heater_vals)):
     time.sleep(3600)
 
     # once blackbody has stabilized, take an IV curve then overbias
-    housekeeping['heaterval'].append(heater_vals[jpower])
-    housekeeping['stagetemp'].append(gt.gettemp(logfile, 'wafer holder'))
-    housekeeping['starttemp'].append(gt.gettemp(logfile, blackbody_channame))
-    housekeeping['starttime'].append(datetime.datetime.now())
-
+    housekeeping['heater value'].append(heater_vals[jpower])
+    housekeeping['{} start temp'.format(stage_channame)]
+        .append(gt.gettemp(logfile, stage_channame))
+    housekeeping['{} start temp'.format(blackbody_channame)]
+        .append(gt.gettemp(logfile, blackbody_channame))
+    
     # check bolometer states and only drop overbiased bolos
     for bolo in hwm.query(pydfmux.Bolometer):
         if bolo.readout_channel:
             bolo.state = bolo.retrieve_bolo_state().state
         hwm.commit()
-    bolos_to_drop = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='overbiased')
-    drop_bolos_results = bolos_to_drop.drop_bolos(A_STEP_SIZE=0.00002, target_amplitude=0.75, fixed_stepsize=False, TOLERANCE=0.05)
+    bolos_to_drop = hwm.query(pydfmux.Bolometer)
+                       .filter(pydfmux.Bolometer.state=='overbiased')
+    drop_bolos_results = bolos_to_drop.drop_bolos(A_STEP_SIZE=dropbolos_step,
+                                                  target_amplitude=dropbolos_target,
+                                                  fixed_stepsize=False,
+                                                  TOLERANCE=dropbolos_tolerance)
 
     # record final temperature
-    housekeeping['stoptemp'].append(gt.gettemp(logfile, blackbody_channame))
-
+    housekeeping['{} stop temp'.format(stage_channame)]
+        .append(gt.gettemp(logfile, stage_channame))
+    housekeeping['{} stop temp'.format(blackbody_channame)]
+        .append(gt.gettemp(logfile, blackbody_channame))
+    
     # check bolometer states and only drop tuned bolos
     for bolo in hwm.query(pydfmux.Bolometer):
         if bolo.readout_channel:
             bolo.state = bolo.retrieve_bolo_state().state
         hwm.commit()
-    bolos_to_overbias = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='tuned')
-    overbias_results = bolos_to_overbias.overbias_and_null(carrier_amplitude=0.015, scale_by_frequency=True)
+    bolos_to_overbias = hwm.query(pydfmux.Bolometer)
+                           .filter(pydfmux.Bolometer.state=='tuned')
+    overbias_results = bolos_to_overbias.overbias_and_null(carrier_amplitude=overbias_amp,
+                                                           scale_by_frequency=True)
 
+    # record data directories
+    housekeeping['drop_bolos datadir']
+        .append(drop_bolos_results[drop_bolos_results.keys()[0]]['output_directory'])
+    housekeeping['overbias datadir']
+        .append(overbias_results[overbias_results.keys()[0]]['output_directory'])
+    
     # save housekeeping data after each measurement to avoid losses
     f = file(output_filename, 'w')
     pickle.dump(housekeeping, f)
