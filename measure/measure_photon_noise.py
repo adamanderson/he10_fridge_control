@@ -39,7 +39,7 @@ hwm = y['hardware_map']
 bolos = hwm.query(pydfmux.Bolometer)
 
 # dict of housekeeping data
-output_filename = '%s_net_housekeeping.pkl' % '{:%Y%m%d_%H%M%S}'
+output_filename = '%s_photon_noise_housekeeping.pkl' % '{:%Y%m%d_%H%M%S}'
                   .format(datetime.datetime.now())
 housekeeping = {'drop_bolos datadir': [],
                 'noise datadir': [],
