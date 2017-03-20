@@ -1,4 +1,3 @@
-
 # measure_opteff.py
 #
 # Script for measuring optical efficiency.
