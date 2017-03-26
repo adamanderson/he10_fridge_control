@@ -34,7 +34,7 @@ WaferLS.set_heater_range(1, 3)
 p = pid.PIDController('/daq/fnal_temp_logs/run17_log_read.h5', 'cold load center', WaferLS, 1, 0.8, 0.01, 0.0, coldload_low_setpoint)
 
 # setup pydfmux stuff
-hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm_3G_only/hwm.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm_SPTpol_only/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 hwm = y['hardware_map']
 bolos = hwm.query(pydfmux.Bolometer)
@@ -59,7 +59,7 @@ housekeeping = {'drop_bolos low-P datadir': [],
 p.start_pid(0)
 
 # wait 1h for blackbody to stabilize
-time.sleep(3600)
+time.sleep(1800)
 
 for jR in range(len(Rfrac_vals)):
     print('Dropping to Rfrac={}'.format(Rfrac_vals[jR]))
@@ -153,3 +153,4 @@ for jR in range(len(Rfrac_vals)):
 
 # turn off the heater as the last step
 p.stop_pid()
+WaferLS.set_heater_range(1, 0)

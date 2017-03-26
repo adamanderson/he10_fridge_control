@@ -39,14 +39,13 @@ PS2 = PS.Agilent3631A('/dev/ttyr03',
                       '4He IC switch', '3He IC pump', '4He IC pump')
 
 # setup pydfmux stuff
-hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm_3G_only/hwm.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm_SPTpol_only/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 hwm = y['hardware_map']
 bolos = hwm.query(pydfmux.Bolometer)
 
 # dict of housekeeping data
-output_filename = '%s_G_temp_data.pkl' % '{:%Y%m%d_%H%M%S}'
-                   .format(datetime.datetime.now())
+output_filename = '%s_G_temp_data.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
 housekeeping = {'drop_bolos datadir': [],
                 'overbias datadir': [],
                 '{} start temp'.format(channel_of_interest): [],
@@ -56,7 +55,7 @@ housekeeping = {'drop_bolos datadir': [],
 print('Turning off switches...')
 PS1.set_voltage('3He UC switch', 0)   
 PS1.set_voltage('3He IC switch', 0)     
-time.sleep(300)
+time.sleep(600)
 
 # take data at each temperature
 for jtemp in range(len(setpoints)):
@@ -82,41 +81,34 @@ for jtemp in range(len(setpoints)):
         ChaseLS.set_heater_range(1, 0)
         sys.exit('UC Head failed to stabilize! Zeroed heater and quitting now.')
 
-    # get housekeeping information before operating bolos
-    housekeeping['{} start temp'.format(channel_of_interest)]
-        .append(WaferLS.get_temps()[channel_of_interest])
+    # get housekeeping information before operating bolos 
+    housekeeping['{} start temp'.format(channel_of_interest)].append(WaferLS.get_temps()[channel_of_interest])
 
     # check bolometer states and only drop overbiased bolos
     for bolo in hwm.query(pydfmux.Bolometer):
         if bolo.readout_channel:
             bolo.state = bolo.retrieve_bolo_state().state
         hwm.commit()
-    bolos_to_drop = hwm.query(pydfmux.Bolometer)
-                       .filter(pydfmux.Bolometer.state=='overbiased')
+    bolos_to_drop = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='overbiased')
     drop_bolos_results = bolos_to_drop.drop_bolos(A_STEP_SIZE=drobbolos_step,
-                                                  target_amplitude=dropbolos_target,
                                                   fixed_stepsize=False,
                                                   TOLERANCE=dropbolos_tolerance)
 
     # get housekeeping information after operating bolos
-    housekeeping['{} start temp'.format(channel_of_interest)]
-        .append(WaferLS.get_temps()[channel_of_interest]) 
+    housekeeping['{} stop temp'.format(channel_of_interest)].append(WaferLS.get_temps()[channel_of_interest]) 
     
     # check bolometer states and only drop tuned bolos
     for bolo in hwm.query(pydfmux.Bolometer):
         if bolo.readout_channel:
             bolo.state = bolo.retrieve_bolo_state().state
         hwm.commit()
-    bolos_to_overbias = hwm.query(pydfmux.Bolometer)
-                           .filter(pydfmux.Bolometer.state=='tuned')
+    bolos_to_overbias = hwm.query(pydfmux.Bolometer).filter(pydfmux.Bolometer.state=='tuned')
     overbias_results = bolos_to_overbias.overbias_and_null(carrier_amplitude=overbias_amp,
                                                            scale_by_frequency=True)
 
     # record data directories
-    housekeeping['drop_bolos datadir']
-            .append(drop_bolos_results[drop_bolos_results.keys()[0]]['output_directory'])
-    housekeeping['overbias datadir']
-            .append(overbias_results[overbias_results.keys()[0]]['output_directory'])
+    housekeeping['drop_bolos datadir'].append(drop_bolos_results['output_directory'])
+    housekeeping['overbias datadir'].append(overbias_results['output_directory'])
     
     # save the data to a pickle file, rewriting after each acquisition
     f = file(output_filename, 'w')
