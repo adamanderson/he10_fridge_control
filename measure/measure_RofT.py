@@ -8,6 +8,7 @@
 
 import he10_fridge_control.control.lakeshore as LS
 import he10_fridge_control.control.agilent as PS
+import he10_fridge_control.analysis.fridgetools as fridgetools
 import pydfmux
 import time
 import datetime
@@ -16,27 +17,28 @@ import cPickle as pickle
 import subprocess
 
 # user params
-PID_high_temp = 0.625        # starting temperature where we overbias
+PID_high_temp = 0.700        # starting temperature where we overbias
 PID_low_temp = 0.400         # lowest temperature that we PID control after cooling
 wafer_high_temp = 0.625      # we wait until the wafer reaches this temp before starting to cool
 wafer_low_temp = 0.450       # we wait until the wafer reaches this temp before warming up
 K_per_sec = 1e-4             # heating and cooling rate of PID target temp
 update_time = 10             # how often we change PID parameters
 overbias_amplitude = 0.0005
-ledgerman_path = '/daq/spt3g_software/dfmux/bin/ledgerman.py'
-RT_data_path = '/daq/spt3g_software/dfmux/bin/%s_RT.nc' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
-channel_of_interest = 'wafer holder'
+ledgerman_path = '/home/adama/spt3g_software/dfmux/bin/ledgerman.py'
+RT_data_path = '/home/adama/spt3g_software/dfmux/bin/%s_RT.nc' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
+hk_data_path = '/home/adama/spt3g_software/dfmux/bin/%s_RT_houskeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
+channel_of_interest = 'UC stage'
 PID_channel = 'UC Head'
 
 # pydfmux stuff
-hwm_file = '/home/spt3g/detector_testing/run14/hardware_maps/hwm_slot1/fermilab_hwm_complete.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run18/slot1/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 bolos = y['hardware_map'].query(pydfmux.Bolometer)
 ds = y['hardware_map'].query(pydfmux.Dfmux)
 
 # Lakeshore config
 ChaseLS = LS.Lakeshore350('192.168.0.12',  ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
-WaferLS = LS.Lakeshore350('192.168.2.5',  ['wafer holder', '3G IC head', '3G UC head', '3G 4He head'])
+WaferLS = LS.Lakeshore350('192.168.2.5',  ['UC stage', '3G IC head', '3G UC head', '3G 4He head'])
 ChaseLS.config_output(1,1,ChaseLS.channel_names.index(PID_channel)+1)
 
 # Power supply config
@@ -65,6 +67,7 @@ for set_temp in warmup_temps:
 
 # wait for wafer to warm up
 while WaferLS.get_temps()[channel_of_interest] < wafer_high_temp:
+    print(WaferLS.get_temps()[channel_of_interest])
     time.sleep(30)
 
 # overbias bolometers
@@ -102,3 +105,9 @@ while WaferLS.get_temps()[channel_of_interest] < wafer_high_temp:
 ChaseLS.set_heater_range(1, 0)
 proc_ledgerman.terminate()
 print datetime.datetime.now()
+
+# save pkl file with housekeeping data
+T_data, time_data = fridgetools.load_var('/daq/fnal_temp_logs/run18_log_read.h5', 'UC stage', 0, 1e12)
+hkdata = {'time': time_data, 'temperature': T_data}
+with open(hk_data_path, 'w') as f:
+    pickle.dump(hkdata, f)
