@@ -17,21 +17,22 @@ import cPickle as pickle
 import subprocess
 
 # user params
-PID_high_temp = 0.700        # starting temperature where we overbias
-PID_low_temp = 0.400         # lowest temperature that we PID control after cooling
-wafer_high_temp = 0.625      # we wait until the wafer reaches this temp before starting to cool
-wafer_low_temp = 0.450       # we wait until the wafer reaches this temp before warming up
-K_per_sec = 1e-4             # heating and cooling rate of PID target temp
-update_time = 10             # how often we change PID parameters
-overbias_amplitude = 0.0005
-ledgerman_path = '/home/adama/spt3g_software/dfmux/bin/ledgerman.py'
-RT_data_path = '/home/adama/spt3g_software/dfmux/bin/%s_RT.nc' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
-hk_data_path = '/home/adama/spt3g_software/dfmux/bin/%s_RT_houskeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
+PID_high_temp       = 0.600   # starting temperature where we overbias
+PID_low_temp        = 0.300   # lowest temperature that we PID control after cooling
+wafer_high_temp     = 0.625   # we wait until the wafer reaches this temp before starting to cool
+wafer_low_temp      = 0.450   # we wait until the wafer reaches this temp before warming up
+K_per_sec           = 5e-5    # heating and cooling rate of PID target temp
+update_time         = 10      # how often we change PID parameters
+overbias_amplitude  = 0.0005
+hwm_file            = '/home/adama/hardware_maps/fnal/run21/slot1_normal_bolos/hwm.yaml'
+ledgerman_path      = '/home/adama/spt3g_software/dfmux/bin/ledgerman.py'
+RT_data_path        = '/home/adama/spt3g_software/dfmux/bin/%s_RT.nc' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
+fridge_log_path     = '/daq/fnal_temp_logs/run19_log_read.h5'
+hk_data_path        = '/home/adama/spt3g_software/dfmux/bin/%s_RT_houskeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
 channel_of_interest = 'UC stage'
-PID_channel = 'UC Head'
+PID_channel         = 'UC Head'
 
 # pydfmux stuff
-hwm_file = '/home/adama/hardware_maps/fnal/run18/slot1/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 bolos = y['hardware_map'].query(pydfmux.Bolometer)
 ds = y['hardware_map'].query(pydfmux.Dfmux)
@@ -107,7 +108,7 @@ proc_ledgerman.terminate()
 print datetime.datetime.now()
 
 # save pkl file with housekeeping data
-T_data, time_data = fridgetools.load_var('/daq/fnal_temp_logs/run18_log_read.h5', 'UC stage', 0, 1e12)
+T_data, time_data = fridgetools.load_var(fridge_log_path, channel_of_interest, 0, 1e12)
 hkdata = {'time': time_data, 'temperature': T_data}
 with open(hk_data_path, 'w') as f:
     pickle.dump(hkdata, f)
