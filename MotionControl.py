@@ -20,7 +20,9 @@ class NewportSMC100CC:
         self.serial_interface = serial.Serial(port='/dev/ttyUSB0', baudrate=57600, 
                                               bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE,
                                               stopbits=serial.STOPBITS_ONE, xonxoff=True)
-        self.serial_interface.write('01OR\r\n')                                      
+        self.serial_interface.write('01OR\r\n')
+	time.sleep(.3) #longer wait because initialization
+	self.serial_interface.write('01VA10\r\n') #set slow velocity
         
     def get_velocity(self): #get current velocity
         self.serial_interface.write('01VA?\r\n')
