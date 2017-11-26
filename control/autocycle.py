@@ -22,7 +22,7 @@
 import time
 import gettemp
 import getslope
-import wx
+from wx import PostEvent
 import powersupply
 
 
@@ -42,36 +42,36 @@ def run(datafile_name, parent, messageevent, killevent):
     # turn off all pumps and switches
     for name in powersupply.heaternames:
         powersupply.set_voltage(name, 0.0)
-        wx.PostEvent(parent, messageevent(message=('Setting %s to 0V.' % name)))
+        PostEvent(parent, messageevent(message=('Setting %s to 0V.' % name)))
 
-    wx.PostEvent(parent, messageevent(message='Waiting for switches to cool.'))
+    PostEvent(parent, messageevent(message='Waiting for switches to cool.'))
     while gettemp.gettemp(datafile_name, 'He4 IC Switch') > 8 or \
           gettemp.gettemp(datafile_name, 'He3 IC Switch') > 13 or \
           gettemp.gettemp(datafile_name, 'He3 UC Switch') > 8:
         if waitforkill(1, killevent): return
 
     #Heat 4HE IC pump first, then do other He3 pumps next
-    wx.PostEvent(parent, messageevent(message='Turning on 4He IC Pump to -25 V.'))
+    PostEvent(parent, messageevent(message='Turning on 4He IC Pump to -25 V.'))
     powersupply.set_voltage('4He IC pump', -25)
     if waitforkill(2, killevent): return
 
-    wx.PostEvent(parent, messageevent(message='Waiting for 4He IC Pump to reach 33K.'))
+    PostEvent(parent, messageevent(message='Waiting for 4He IC Pump to reach 33K.'))
     while gettemp.gettemp(datafile_name, 'He4 IC Pump') < 33:
         if waitforkill(2, killevent): return
 
-    wx.PostEvent(parent, messageevent(message='Lowering 4He IC Pump voltage to -4.5V.'))
+    PostEvent(parent, messageevent(message='Lowering 4He IC Pump voltage to -4.5V.'))
     powersupply.set_voltage('4He IC pump', -4.5)
 
     #Heat 3He pumps
-    wx.PostEvent(parent, messageevent(message='Turning on 3He IC Pump to +25 V.'))
+    PostEvent(parent, messageevent(message='Turning on 3He IC Pump to +25 V.'))
     powersupply.set_voltage('3He IC pump', 25)
     if waitforkill(2, killevent): return
 
-    wx.PostEvent(parent, messageevent(message='Turning on 3He UC Pump to +25 V.'))
+    PostEvent(parent, messageevent(message='Turning on 3He UC Pump to +25 V.'))
     powersupply.set_voltage('3He UC pump', -25)
     if waitforkill(2, killevent): return
 
-    wx.PostEvent(parent, messageevent(message='Waiting for all switches to be <8K, and 3He pumps to be >47K'))
+    PostEvent(parent, messageevent(message='Waiting for all switches to be <8K, and 3He pumps to be >47K'))
     isHe3ICHigh, isHe3UCHigh = True, True
     while gettemp.gettemp(datafile_name, 'He4 IC Switch') > 8 or \
           gettemp.gettemp(datafile_name, 'He3 IC Switch') > 8 or \
@@ -81,18 +81,18 @@ def run(datafile_name, parent, messageevent, killevent):
         
         # TODO: Don't hardcode in thermometer names, lookup from logger python modules (AJA)
         if gettemp.gettemp(datafile_name, 'He3 IC Pump')> 47 and isHe3ICHigh==True:
-            wx.PostEvent(parent, messageevent(message='Lowering 3He IC Pump voltage to 4.55V.'))
+            PostEvent(parent, messageevent(message='Lowering 3He IC Pump voltage to 4.55V.'))
             powersupply.set_voltage('3He IC pump', 4.55)
             if waitforkill(2, killevent): return
             isHe3ICHigh = False
 
         if gettemp.gettemp(datafile_name, 'He3 UC Pump') > 47 and isHe3UCHigh==True:
-            wx.PostEvent(parent, messageevent(message='Lowering 3He UC Pump voltage to -6.72V.'))
+            PostEvent(parent, messageevent(message='Lowering 3He UC Pump voltage to -6.72V.'))
             powersupply.set_voltage('3He UC pump', -6.72)
             if waitforkill(2, killevent): return
             isHe3UCHigh = False
 
-    wx.PostEvent(parent, messageevent(message='Waiting for mainplate to settle'))
+    PostEvent(parent, messageevent(message='Waiting for mainplate to settle'))
 
     #Checks to see if Mainplate has settled by checking the last 10 slopes in the datafile.
     #wait 10 minutes before checking
@@ -101,38 +101,84 @@ def run(datafile_name, parent, messageevent, killevent):
     while getslope.getslope(datafile_name, 'mainplate', 60) > 0.001:
         if waitforkill(10, killevent): return
 
-    wx.PostEvent(parent, messageevent(message='Mainplate has settled'))
-    wx.PostEvent(parent, messageevent(message='Turning off 4He IC pump and turning on switch'))
+    PostEvent(parent, messageevent(message='Mainplate has settled'))
+    PostEvent(parent, messageevent(message='Turning off 4He IC pump and turning on switch'))
     powersupply.set_voltage('4He IC pump', 0)
     powersupply.set_voltage('4He IC switch', 5)
 
-    wx.PostEvent(parent, messageevent(message='Waiting for heat exchanger to increase suddenly'))
+    PostEvent(parent, messageevent(message='Waiting for heat exchanger to increase suddenly'))
     if waitforkill(1200, killevent): return
     while getslope.getslope(datafile_name, 'HEX', 60) < 0.003:
         if waitforkill(10, killevent): return
 
-    wx.PostEvent(parent, messageevent(message='HEX has started increasing'))
-    wx.PostEvent(parent, messageevent(message='Now turning off 3He IC Pump and turning on switch'))
+    PostEvent(parent, messageevent(message='HEX has started increasing'))
+    PostEvent(parent, messageevent(message='Now turning off 3He IC Pump and turning on switch'))
     powersupply.set_voltage('3He IC pump', 0)
     powersupply.set_voltage('3He IC switch', 5)
 
-    wx.PostEvent(parent, messageevent(message='Waiting for heat exchanger and mainplate to settle'))
+    PostEvent(parent, messageevent(message='Waiting for heat exchanger and mainplate to settle'))
     if waitforkill(600, killevent): return
     while abs(getslope.getslope(datafile_name, 'mainplate', 60)) > 0.001:
         if waitforkill(10, killevent): return
 
-    wx.PostEvent(parent, messageevent(message='Now turning off 3He UC Pump and turning on switch'))
+    PostEvent(parent, messageevent(message='Now turning off 3He UC Pump and turning on switch'))
     powersupply.set_voltage('3He UC pump', 0)
     powersupply.set_voltage('3He UC switch', 5)
 
     if waitforkill(600, killevent): return
 
-    wx.PostEvent(parent, messageevent(message='Cycle is complete'))
+    PostEvent(parent, messageevent(message='Cycle is complete'))
     killevent.set()
 
 
 if __name__ == '__main__':
-    # TODO: Add this [AJA]
     # when running as a standalone script, redirect messageevents to the
     # terminal via a dummy parent object
-    print 'Starting autocycle...'
+    # Updated 2017/11/23 [ASR]
+
+    import argparse
+    import signal
+    import threading
+    import os
+
+    # Ensure the fridge log file is readable
+    P = argparse.ArgumentParser('Run autocycle on HPD cryostat')
+    P.add_argument('fridge_log', help='Path to fridge log file',
+                   type=argparse.FileType('r'))
+    args = P.parse_args()
+
+    # Timestamped log messages
+    # This simple log printer replaces the LoggingEvent handling
+    # that's done in the GUI.
+    def log(message):
+        print('[ {} ]  {}'.format(
+            time.strftime('%c %Z', time.localtime()), message))
+
+    # Dummy event handler that overloads the imported wx function
+    # This handler does nothing since the log message is handled
+    # right away by the log function.
+    def PostEvent(handler, event):
+        return
+
+    # Handle cycle interrupts smoothly
+    abortcycle = threading.Event()
+
+    def onexit(signum, frame):
+        abortcycle.set()
+        print('')
+        log('Terminating fridge cycle.')
+        log('Zeroing all pump heaters and switches.')
+        powersupply.set_voltage('4He IC pump', 0.0)
+        powersupply.set_voltage('3He IC pump', 0.0)
+        powersupply.set_voltage('3He UC pump', 0.0)
+        powersupply.set_voltage('4He IC switch', 0.0)
+        powersupply.set_voltage('3He IC switch', 0.0)
+        powersupply.set_voltage('3He UC switch', 0.0)
+        log('Fridge cycle terminated.')
+        raise SystemExit
+
+    signal.signal(signal.SIGINT, onexit)
+
+    # Now ready to run
+    log('Starting autocycle...')
+    run(args.fridge_log.name, None, log, abortcycle)
