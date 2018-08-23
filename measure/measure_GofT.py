@@ -19,19 +19,17 @@ import numpy as np
 import cPickle as pickle
 
 # run-specific settings
-overbias_amp = 0.018
+overbias_amp = 0.015
 drobbolos_step = 0.00005
 dropbolos_target = 0.9
 dropbolos_tolerance = 0.02
-setpoints = np.linspace(0.25, 0.550, 10)
+setpoints = np.linspace(0.270, 0.410, 10)
 
 # cryostat-specific settings
-PID_channel = 'UC Head'
+PID_channel = 'UC stage'
 channel_of_interest = 'UC stage'
 ChaseLS = LS.Lakeshore350('192.168.0.12',
                           ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
-WaferLS = LS.Lakeshore350('192.168.2.5',
-                          ['UC stage', 'channel B', 'channel C', 'channel D'])
 ChaseLS.config_output(1,1,ChaseLS.channel_names.index(PID_channel)+1)
 PS1 = PS.Agilent3631A('/dev/ttyr02',
                       '3He UC switch', '3He IC switch', '3He UC pump')
@@ -39,7 +37,7 @@ PS2 = PS.Agilent3631A('/dev/ttyr03',
                       '4He IC switch', '3He IC pump', '4He IC pump')
 
 # setup pydfmux stuff
-hwm_file = '/home/adama/hardware_maps/fnal/run17/hwm_SPTpol_only/hwm.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run31/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 hwm = y['hardware_map']
 bolos = hwm.query(pydfmux.Bolometer)
@@ -61,7 +59,7 @@ time.sleep(600)
 for jtemp in range(len(setpoints)):
     print('Setting UC head to %f mK.' % (setpoints[jtemp]*1e3))
     ChaseLS.set_PID_temp(1, setpoints[jtemp])
-    ChaseLS.set_heater_range(1, 2)
+    ChaseLS.set_heater_range(1, 3)
     time.sleep(10*60)
 
     # wait until the wafer holder temperature is stable up to 1mK;
@@ -71,7 +69,7 @@ for jtemp in range(len(setpoints)):
     while np.abs(recenttemps[-1] - recenttemps[-4]) > 0.001 and \
           nAttempts < 45:
         time.sleep(20)
-        recenttemps.append(WaferLS.get_temps()[channel_of_interest])
+        recenttemps.append(ChaseLS.get_temps()[channel_of_interest])
         nAttempts = nAttempts + 1
         if recenttemps[-1]>0 and recenttemps[-4]>0:
             print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
@@ -82,7 +80,7 @@ for jtemp in range(len(setpoints)):
         sys.exit('UC Head failed to stabilize! Zeroed heater and quitting now.')
 
     # get housekeeping information before operating bolos 
-    housekeeping['{} start temp'.format(channel_of_interest)].append(WaferLS.get_temps()[channel_of_interest])
+    housekeeping['{} start temp'.format(channel_of_interest)].append(ChaseLS.get_temps()[channel_of_interest])
 
     # check bolometer states and only drop overbiased bolos
     for bolo in hwm.query(pydfmux.Bolometer):
@@ -95,7 +93,7 @@ for jtemp in range(len(setpoints)):
                                                   TOLERANCE=dropbolos_tolerance)
 
     # get housekeeping information after operating bolos
-    housekeeping['{} stop temp'.format(channel_of_interest)].append(WaferLS.get_temps()[channel_of_interest]) 
+    housekeeping['{} stop temp'.format(channel_of_interest)].append(ChaseLS.get_temps()[channel_of_interest]) 
     
     # check bolometer states and only drop tuned bolos
     for bolo in hwm.query(pydfmux.Bolometer):
