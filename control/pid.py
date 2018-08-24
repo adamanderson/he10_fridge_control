@@ -48,10 +48,6 @@ class PIDController:
             d = self.Kd * (err - err_prev)/self.update_time
             # Proportional
             p = self.Kp * err
-
-            print('p,i,d = {}, {}, {}'.format(p, i, d))
-            print('Tset, Tmeasured = {}, {}'.format(self.temp_setpoint, temp))
-            print('err = {}'.format(err))
             
             # set heater
             heater_value = np.max([i + d + p, 0])
