@@ -232,7 +232,7 @@ class MainWindow(wx.Frame):
 
     def OnOpen(self, event):
         """ Open a file"""
-        dlg = wx.FileDialog(self, "Choose a file", "", "", "*.*", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a file", "", "", "*.*", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.dataFileBox.SetValue(dlg.GetPath())
         dlg.Destroy()
