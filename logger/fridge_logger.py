@@ -16,9 +16,14 @@ import numpy as np
 import tables
 import os.path
 import shutil
-
+import argparse as ap
 import plotter
 
+P0 = ap.ArgumentParser(description='Plotter for Chase He10 fridge.',
+                       formatter_class=ap.RawTextHelpFormatter)
+P0.add_argument('logfile', action='store', default=None, type=str,
+                help='Name of HDF5 file to which to write temperature data.')
+args = P0.parse_args()
 
 # BASIC CONFIGURATION
 # Specify mapping of {"interface" -> [list of channels]} here. The "interface"
@@ -63,16 +68,15 @@ dt_update = 2  # sec changed to 1 sec for RT
 base_path = os.path.dirname(os.path.abspath(__file__))
 
 # file name
-data_filename = raw_input('Enter relative path to data file (must end in .h5). NB: If enter an existing filename, the script will attempt to append that file, by default: ')
-if os.path.isfile(data_filename) == True:
-    print data_filename + ' already exists. Attempting to append data to end of file. If thermometer names differ in the existing file, this may fail.'
+if os.path.isfile(args.logfile) == True:
+    print args.logfile + ' already exists. Attempting to append data to end of file. If thermometer names differ in the existing file, this may fail.'
     pytables_mode = 'a'
 else:
-    print 'Attempting to create data file ' + data_filename
+    print 'Attempting to create data file ' + args.logfile
     pytables_mode = 'w'
 
 # create output file
-f_h5 = tables.open_file(data_filename, mode=pytables_mode, title='fridge data') # append file, by default
+f_h5 = tables.open_file(args.logfile, mode=pytables_mode, title='fridge data') # append file, by default
 try:
     group_all_data = f_h5.get_node('/data')
 except tables.NoSuchNodeError:
@@ -166,8 +170,8 @@ try:
         # make a copy of the data file; useful for other processes that need
         # access to the latest data since we cannot do simultaneous read/write
         # of pytables files
-        shutil.copyfile(data_filename, data_filename + str('.lock'))
-        shutil.move(data_filename + str('.lock'), data_filename.strip('.h5') + '_read.h5')
+        shutil.copyfile(args.logfile, args.logfile + str('.lock'))
+        shutil.move(args.logfile + str('.lock'), args.logfile.strip('.h5') + '_read.h5')
 
         # wait before reading again
         time.sleep(dt_update)
