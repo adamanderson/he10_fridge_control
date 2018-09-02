@@ -100,9 +100,9 @@ def read_temp_LS(interface, channel, num_trys = 10, delay = 0.1):
                 return temp
 
         #Welp, that didn't work, try again!
-        print 'Problem reading from: ' + interface.name + ':' + channel
-        print 'Raw output is: ' + repr(raw_output)
-        print 'Will try ' + str(num_trys - 1 - num) + ' more times before aborting.'
+        print('Problem reading from: {}: {}'.format(interface.name, channel))
+        print('Raw output is: {}'.format(repr(raw_output)))
+        print('Will try {} more times before aborting.'.format(num_trys - 1 - num))
         time.sleep(delay)
 
     raise NameError("Lost communication with: " + interface)
@@ -110,10 +110,12 @@ def read_temp_LS(interface, channel, num_trys = 10, delay = 0.1):
 # file name
 data_filename = raw_input('Enter relative path to data file (must end in .h5). NB: If enter an existing filename, the script will attempt to append that file, by default: ')
 if os.path.isfile(data_filename) == True:
-    print data_filename + ' already exists. Attempting to append data to end of file. If thermometer names differ in the existing file, this may fail.'
+    print('{} already exists. Attempting to append data to end of file.'
+          'If thermometer names differ in the existing file, this may fail.'
+          .format(data_filename))
     pytables_mode = 'a'
 else:
-    print 'Attempting to create data file ' + data_filename
+    print('Attempting to create data file {}'.format(data_filename))
     pytables_mode = 'w'
 
 # create output file
@@ -173,7 +175,7 @@ try:
         time.sleep(dt_update)
 
 except KeyboardInterrupt:
-    print "\nStopping data acquisition"
+    print("\nStopping data acquisition")
 
 # close the connections
 for interface_address in serial_interface_address:

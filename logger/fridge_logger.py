@@ -69,10 +69,12 @@ base_path = os.path.dirname(os.path.abspath(__file__))
 
 # file name
 if os.path.isfile(args.logfile) == True:
-    print args.logfile + ' already exists. Attempting to append data to end of file. If thermometer names differ in the existing file, this may fail.'
+    print('{} already exists. Attempting to append data to end of file. '
+          'If thermometer names differ in the existing file, this may fail.'
+          .format(args.logfile))
     pytables_mode = 'a'
 else:
-    print 'Attempting to create data file ' + args.logfile
+    print('Attempting to create data file {}'.format(args.logfile))
     pytables_mode = 'w'
 
 # create output file
@@ -102,8 +104,8 @@ serial_interface_address = [name for name in channel_map.keys() if '/dev' in nam
 tcp_interface_address = [name for name in channel_map.keys() if '192.168' in name]
 # check that we didn't miss interfaces in the split
 if set(serial_interface_address + tcp_interface_address) != set(channel_map.keys()):
-    print "WARNING: Could not parse all interface addresses as either serial or TCP. " + \
-          "Some devices may not be read!"
+    print("WARNING: Could not parse all interface addresses as either serial "
+          "or TCP. Some devices may not be read!")
 
 # set up the serial interfaces
 serial_interfaces = dict()
@@ -182,7 +184,7 @@ try:
         time.sleep(dt_update)
 
 except KeyboardInterrupt:
-    print "\nStopping data acquisition"
+    print("\nStopping data acquisition")
 
 # close the connections
 for interface_address in serial_interface_address:
