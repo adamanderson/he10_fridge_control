@@ -14,6 +14,7 @@ import socket
 import time
 import numpy as np
 import tables
+import os
 import os.path
 import shutil
 import argparse as ap
@@ -91,6 +92,11 @@ for interface in channel_map:
             table_columns = {'time': tables.Time32Col(), channel: tables.Float32Col()}
             tables_list[channel] = f_h5.create_table(group_all_data, underscoreify(channel), table_columns, channel)
 
+# create output directory for plots, if it does not already exist
+plot_dirname = os.path.join(base_path, '../website/img/')
+if not os.path.exists(plot_dirname):
+    os.mkdir(plot_dirname)
+            
 # split up interface addresses by serial and TCP
 serial_interface_address = [name for name in channel_map.keys() if '/dev' in name]
 tcp_interface_address = [name for name in channel_map.keys() if '192.168' in name]
