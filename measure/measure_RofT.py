@@ -17,20 +17,20 @@ import cPickle as pickle
 import subprocess
 
 # user params
-PID_high_temp       = 0.600   # starting temperature where we overbias
-PID_low_temp        = 0.300   # lowest temperature that we PID control after cooling
-wafer_high_temp     = 0.625   # we wait until the wafer reaches this temp before starting to cool
-wafer_low_temp      = 0.450   # we wait until the wafer reaches this temp before warming up
-K_per_sec           = 5e-5    # heating and cooling rate of PID target temp
+PID_high_temp       = 0.520   # starting temperature where we overbias
+PID_low_temp        = 0.350   # lowest temperature that we PID control after cooling
+wafer_high_temp     = 0.520   # we wait until the wafer reaches this temp before starting to cool
+wafer_low_temp      = 0.370   # we wait until the wafer reaches this temp before warming up
+K_per_sec           = 3e-5    # heating and cooling rate of PID target temp
 update_time         = 10      # how often we change PID parameters
 overbias_amplitude  = 0.0005
-hwm_file            = '/home/adama/hardware_maps/fnal/run21/slot1_normal_bolos/hwm.yaml'
+hwm_file            = '/home/adama/hardware_maps/fnal/run31/hwm.yaml'
 ledgerman_path      = '/home/adama/spt3g_software/dfmux/bin/ledgerman.py'
 RT_data_path        = '/home/adama/spt3g_software/dfmux/bin/%s_RT.nc' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
-fridge_log_path     = '/daq/fnal_temp_logs/run19_log_read.h5'
+fridge_log_path     = '/daq/fnal_temp_logs/run31_log_read.h5'
 hk_data_path        = '/home/adama/spt3g_software/dfmux/bin/%s_RT_houskeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
 channel_of_interest = 'UC stage'
-PID_channel         = 'UC Head'
+PID_channel         = 'UC stage'
 
 # pydfmux stuff
 y = pydfmux.load_session(open(hwm_file, 'r'))
@@ -39,7 +39,6 @@ ds = y['hardware_map'].query(pydfmux.Dfmux)
 
 # Lakeshore config
 ChaseLS = LS.Lakeshore350('192.168.0.12',  ['UC Head', 'IC Head', 'UC stage', 'LC shield'])
-WaferLS = LS.Lakeshore350('192.168.2.5',  ['UC stage', '3G IC head', '3G UC head', '3G 4He head'])
 ChaseLS.config_output(1,1,ChaseLS.channel_names.index(PID_channel)+1)
 
 # Power supply config
@@ -59,16 +58,16 @@ time.sleep(600)
 
 # warm up the fridge
 print('Heating up fridge...')
-warmup_temps = np.linspace(0.250, PID_high_temp, 20)
+warmup_temps = np.linspace(0.250, PID_high_temp, 60)
+ChaseLS.set_heater_range(1, 3)
 for set_temp in warmup_temps:
     print('Setting PID to %3.fmK'%(set_temp*1e3))
     ChaseLS.set_PID_temp(1, set_temp)
-    ChaseLS.set_heater_range(1, 3)
-    time.sleep(20)
+    time.sleep(30)
 
 # wait for wafer to warm up
-while WaferLS.get_temps()[channel_of_interest] < wafer_high_temp:
-    print(WaferLS.get_temps()[channel_of_interest])
+while ChaseLS.get_temps()[channel_of_interest] < wafer_high_temp:
+    print(ChaseLS.get_temps()[channel_of_interest])
     time.sleep(30)
 
 # overbias bolometers
@@ -83,23 +82,23 @@ print datetime.datetime.now()
 # do the ramp-down
 print('Starting ramp down...')
 current_temp = PID_high_temp
-while current_temp > PID_low_temp and WaferLS.get_temps()[channel_of_interest] > wafer_low_temp:
+while current_temp > PID_low_temp and ChaseLS.get_temps()[channel_of_interest] > wafer_low_temp:
     time.sleep(update_time)
     current_temp = current_temp - (update_time * K_per_sec)
     ChaseLS.set_PID_temp(1, current_temp)
     print('Setting PID to %3.fmK'%(current_temp*1e3))
-while WaferLS.get_temps()[channel_of_interest] > wafer_low_temp:
+while ChaseLS.get_temps()[channel_of_interest] > wafer_low_temp:
     time.sleep(30)
 
 
 # do a ramp-up
 print('Starting ramp up...')
-while current_temp < PID_high_temp and WaferLS.get_temps()[channel_of_interest] < wafer_high_temp:
+while current_temp < PID_high_temp and ChaseLS.get_temps()[channel_of_interest] < wafer_high_temp:
     time.sleep(update_time)
     current_temp = current_temp + (update_time * K_per_sec)
     ChaseLS.set_PID_temp(1, current_temp)
     print('Setting PID to %3.fmK'%(current_temp*1e3))
-while WaferLS.get_temps()[channel_of_interest] < wafer_high_temp:
+while ChaseLS.get_temps()[channel_of_interest] < wafer_high_temp:
     time.sleep(30)
 
 # clean up
