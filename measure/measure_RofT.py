@@ -24,11 +24,11 @@ wafer_low_temp      = 0.370   # we wait until the wafer reaches this temp before
 K_per_sec           = 3e-5    # heating and cooling rate of PID target temp
 update_time         = 10      # how often we change PID parameters
 overbias_amplitude  = 0.0005
-hwm_file            = '/home/adama/hardware_maps/fnal/run31/hwm.yaml'
+hwm_file            = '/home/adama/hardware_maps/fnal/run33/hwm.yaml'
 ledgerman_path      = '/home/adama/spt3g_software/dfmux/bin/ledgerman.py'
 RT_data_path        = '/home/adama/spt3g_software/dfmux/bin/%s_RT.nc' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
-fridge_log_path     = '/daq/fnal_temp_logs/run31_log_read.h5'
-hk_data_path        = '/home/adama/spt3g_software/dfmux/bin/%s_RT_houskeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
+fridge_log_path     = '/daq/fnal_temp_logs/run33_log_read.h5'
+hk_data_path        = '/home/adama/spt3g_software/dfmux/bin/%s_RT_housekeeping.pkl' % '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())
 channel_of_interest = 'UC stage'
 PID_channel         = 'UC stage'
 
@@ -54,7 +54,7 @@ print('Note that ledgerman will fail to take data if you have not already aligne
 print('Turning off switches...')
 PS1.set_voltage('3He UC switch', 0)   
 PS1.set_voltage('3He IC switch', 0)     
-time.sleep(600)
+time.sleep(300)
 
 # warm up the fridge
 print('Heating up fridge...')
