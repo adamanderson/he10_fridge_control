@@ -37,7 +37,7 @@ PS2 = PS.Agilent3631A('/dev/ttyr03',
                       '4He IC switch', '3He IC pump', '4He IC pump')
 
 # setup pydfmux stuff
-hwm_file = '/home/adama/hardware_maps/fnal/run31/hwm.yaml'
+hwm_file = '/home/adama/hardware_maps/fnal/run33/hwm.yaml'
 y = pydfmux.load_session(open(hwm_file, 'r'))
 hwm = y['hardware_map']
 bolos = hwm.query(pydfmux.Bolometer)
@@ -73,8 +73,8 @@ for jtemp in range(len(setpoints)):
         nAttempts = nAttempts + 1
         if recenttemps[-1]>0 and recenttemps[-4]>0:
             print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
-            print('Wafer holder drifted %f mK.' % 1e3*np.abs(recenttemps[-1] -
-                                                             recenttemps[-4]))
+            print('Wafer holder drifted %f mK.' % (1e3*np.abs(recenttemps[-1] -
+                                                             recenttemps[-4])))
     if nAttempts == 45:
         ChaseLS.set_heater_range(1, 0)
         sys.exit('UC Head failed to stabilize! Zeroed heater and quitting now.')
