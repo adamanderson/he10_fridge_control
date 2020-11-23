@@ -125,9 +125,9 @@ try:
     while True:
         # query the devices
         for interface_name in serial_interfaces:
-            serial_interfaces[interface_name].write('KRDG?\r\n')
+            serial_interfaces[interface_name].write('KRDG?\r\n'.encode())
         for interface_address in tcp_interfaces:
-            tcp_interfaces[interface_address].sendto('KRDG? 0\r\n', (interface_address, 7777))
+            tcp_interfaces[interface_address].sendto('KRDG? 0\r\n'.encode(), (interface_address, 7777))
         current_time = time.time()
 
         # wait for devices to issue a response
@@ -135,7 +135,7 @@ try:
 
         # read the responses for serial interfaces
         for interface_name in serial_interfaces:
-            raw_output = serial_interfaces[interface_name].read(serial_interfaces[interface_name].inWaiting())
+            raw_output = serial_interfaces[interface_name].read(serial_interfaces[interface_name].inWaiting()).decode()
 
             # check that we actually got a response with data in it (occasionally the MOXA
             # is non-responsive), otherwise do nothing
@@ -153,11 +153,13 @@ try:
         raw_output_resist = dict()
         for interface_address in tcp_interfaces:
             raw_output_temp[interface_address], _ = tcp_interfaces[interface_address].recvfrom(2048)
+            raw_output_temp[interface_address] = raw_output_temp[interface_address].decode()
         for interface_address in tcp_interfaces:
-            tcp_interfaces[interface_address].sendto('SRDG? 0\r\n', (interface_address, 7777))
+            tcp_interfaces[interface_address].sendto('SRDG? 0\r\n'.encode(), (interface_address, 7777))
         time.sleep(0.1)
         for interface_address in tcp_interfaces:
             raw_output_resist[interface_address], _ = tcp_interfaces[interface_address].recvfrom(2048)
+            raw_output_resist[interface_address] = raw_output_resist[interface_address].decode()
         for interface_address in tcp_interfaces:
             for jValue in range(len(channel_map[interface_address])):
                 channel_name = channel_map[interface_address][jValue]
