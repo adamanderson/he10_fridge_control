@@ -185,6 +185,7 @@ class MainWindow(wx.Frame):
     def he3ucswitch_action(self, event):
         self.switch_action(event, '3He UC switch')
 
+    import time
     def voltagebutton_action(self, event):
         for name in powersupply.heaternames:
             current_voltage = powersupply.read_voltage(name)

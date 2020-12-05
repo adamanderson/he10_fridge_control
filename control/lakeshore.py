@@ -48,9 +48,9 @@ class Lakeshore218:
         temps : dict
             Measured temperatures
         '''
-        self.serial_interface.write('KRDG?\r\n')
+        self.serial_interface.write('KRDG?\r\n'.encode())
         time.sleep(0.1) # wait for response from slow device
-        output = self.serial_interface.read(self.serial_interface.inWaiting())
+        output = self.serial_interface.read(self.serial_interface.inWaiting()).decode()
         temps = {self.channel_names[jchan]: float(output.split(',')[jchan]) \
                  for jchan in range(len(self.channel_names))}
         return temps
